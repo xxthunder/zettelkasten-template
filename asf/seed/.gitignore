@@ -1,0 +1,22 @@
+# OS
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# Editors
+*.swp
+*.swo
+*~
+
+# Linked by asf/scripts/kasten.py setup, not tracked
+.claude/skills/process-inbox
+
+# Python caches of the asf/ scripts and tests
+__pycache__/
+.pytest_cache/
+.venv/
+
+# Obsidian — only the settings that tie the vault to the conventions are tracked
+.obsidian/*
+!.obsidian/app.json
+.trash/
