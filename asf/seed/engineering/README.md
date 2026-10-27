@@ -13,7 +13,7 @@ asked for: runbooks for work without a repo, tool comparisons.
 
 Chronicle across all repos: [Engineering Log](log.md) — newest first.
 Which repos its addresses mean: [Repositories](repos.md).
-What comes next, across all repos: [Next](next.md) — rank 1 first.
+What comes next and what is in progress, across all repos: [Board](board.md).
 
 ## Notes
 

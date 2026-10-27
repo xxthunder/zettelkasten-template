@@ -143,7 +143,7 @@ def merge_settings(current: dict, shared: dict, kasten: Path, remote: str | None
         present = merged.setdefault("hooks", {}).setdefault(event, [])
         present.extend(entry for entry in entries if entry not in present)
     environment = merged.setdefault("env", {})
-    for prefix in ("LOGBOOK", "LEARNINGS"):
+    for prefix in ("LOGBOOK", "LEARNINGS", "BOARD"):
         environment[f"{prefix}_PATH"] = str(kasten)
         if remote:
             environment[f"{prefix}_REMOTE"] = remote

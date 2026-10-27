@@ -38,7 +38,7 @@ learnings/    — learnings: insights that outlive a project — the core of the
 literature/   — literature notes (summaries of sources)
 engineering/  — tinkering: house, network, tools, agent stack; with log.md, the chronicle
                 across all repos, repos.md, the registry of repos the Kasten points into,
-                and next.md, the ranked list across all repos
+                and board.md, the Kanban board across all repos
 docs/         — meta: backlog, decisions
 memory/       — the agent's auto-memory: the agent writes it itself; not an area, no
                 learnings
@@ -102,7 +102,8 @@ related: []                     # list of related file names (without path)
 - **Direction rule**: the Kasten points into repos — item IDs, paths, URLs. **No repo points
   into the Kasten**: no `CLAUDE.md`, no skill text, no item in another repo names it, its path
   or its remote. What knows the Kasten is the machine — the user configuration of the skills
-  `learnings`, `logbook` and `next` (`LEARNINGS_*`, `LOGBOOK_*`), never a repo
+  `learnings` and `logbook` (`LEARNINGS_*`, `LOGBOOK_*`) and of `next` and `backlog-ops` for
+  the board (`BOARD_*`), never a repo
 - **Link sources visibly**: when `source:` is set, the source must also appear as a clickable
   link in the body of the note — frontmatter alone is not enough, because it is hidden as a
   property block when reading. Prefer inline with context over a trailing list of links.
@@ -144,7 +145,7 @@ By text type, not by folder. This file fixes what is English in every Kasten:
 | Learnings (`learnings/`) | English |
 | Engineering log (`engineering/log.md`) | English |
 | Repo registry (`engineering/repos.md`) | English — its subject is repos and IDs, its readers are log and learnings |
-| Ranked list (`engineering/next.md`) | English — a skill reads and writes it, like the log |
+| Board (`engineering/board.md`) | English — skills read and write it, like the log |
 | The agent's auto-memory (`memory/`) | English |
 | Code — scripts, tests, identifiers, comments, output | English, always — whatever the language of the conversation and the surrounding notes |
 

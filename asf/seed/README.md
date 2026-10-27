@@ -13,7 +13,7 @@ is, which `asf/` comes from, explains [asf/README.md](asf/README.md).
   words, in English
 - **[literature/](literature/README.md)** — summaries of sources, in own words
 - **[engineering/](engineering/README.md)** — tinkering, the [log](engineering/log.md) across
-  all repos, the [registry](engineering/repos.md) of repos and the [ranked list](engineering/next.md)
+  all repos, the [registry](engineering/repos.md) of repos and the [board](engineering/board.md)
 - **inbox/** — raw captures; `process inbox` turns them into notes
 - **[docs/](docs/backlog/README.md)** — the backlog and the [decisions](docs/decisions/README.md)
   of this Kasten

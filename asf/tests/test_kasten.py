@@ -33,10 +33,11 @@ def test_new_makes_a_kasten_from_asf_and_the_seed(template, tmp_path, env):
     target = make(template, tmp_path, env, "--remote", REMOTE)
     assert (target / "asf" / "AGENTS.md").is_file()
     assert "@asf/AGENTS.md" in (target / "AGENTS.md").read_text()
-    for seeded in ("CONVENTIONS.md", "README.md", "engineering/log.md", "engineering/next.md",
+    for seeded in ("CONVENTIONS.md", "README.md", "engineering/log.md", "engineering/board.md",
                    "engineering/repos.md", "learnings/README.md", "memory/MEMORY.md",
                    "docs/backlog/README.md", "docs/decisions/README.md", "claude/CLAUDE.md"):
         assert (target / seeded).is_file(), seeded
+    assert not (target / "engineering" / "next.md").exists()
     assert (target / "asf" / "seed").is_dir()
 
 
@@ -118,11 +119,14 @@ def test_setup_merges_the_shared_settings_and_keeps_the_machines_own(template, t
     assert s["env"]["LEARNINGS_PATH"] == str(target)
     assert s["env"]["LOGBOOK_REMOTE"] == REMOTE
     assert s["env"]["LEARNINGS_REMOTE"] == REMOTE
+    assert s["env"]["BOARD_PATH"] == str(target)
+    assert s["env"]["BOARD_REMOTE"] == REMOTE
 
 
 def test_setup_sets_no_remote_variables_without_an_origin(template, tmp_path, env, home):
     make(template, tmp_path, env)
     assert "LOGBOOK_REMOTE" not in settings(home)["env"]
+    assert "BOARD_REMOTE" not in settings(home)["env"]
 
 
 def test_setup_twice_changes_nothing(template, tmp_path, env, home):

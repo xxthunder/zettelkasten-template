@@ -7,8 +7,8 @@ rules are the same everywhere.
 
 ## Four pillars
 
-- **Kasten structure** — this folder. A backlog per repo, a log across repos, a ranked list of
-  what comes next, learnings, and the agent's memory, each with its contract in
+- **Kasten structure** — this folder. A backlog per repo, a log across repos, a board of
+  what comes next and what is in progress, learnings, and the agent's memory, each with its contract in
   [AGENTS.md](AGENTS.md) and its rules in [CONVENTIONS.md](CONVENTIONS.md).
 - **Agentic skills** — the Claude Code skills that work this structure:
   [xxthunder-agentic-skills](https://github.com/xxthunder/xxthunder-agentic-skills)
@@ -21,9 +21,10 @@ rules are the same everywhere.
 
 ## The work loop
 
-Pull an item → log the start → work in a worktree on a feature branch → close the item →
-log the end → drop it from the ranked list. Every step is a skill, and every step writes into
-a repo, never into a chat.
+Pull an item — its card moves to *In Progress* on the board → log the start → work in a
+worktree on a feature branch → close the item — its card leaves the board → log the end.
+Every step is a skill, and every step writes into a repo, never into a chat. The log is
+optional; the board works without it.
 
 ## What lives here
 
@@ -33,7 +34,7 @@ changes its own files in its root instead — its own `AGENTS.md` imports
 [CONVENTIONS.md](CONVENTIONS.md).
 
 - [AGENTS.md](AGENTS.md) — the agent's roles and the contracts for learnings, log and the
-  ranked list
+  board
 - [CONVENTIONS.md](CONVENTIONS.md) — principles, file names, frontmatter, linking, language
 - `templates/` — a template per note type: `learning`, `literature`, `engineering`
 - `scripts/` — `lint.sh`, `review.sh`, `new-zettel.sh`, and `kasten.py`, which makes a new

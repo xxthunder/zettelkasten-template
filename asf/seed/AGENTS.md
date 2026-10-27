@@ -2,7 +2,7 @@
 
 @asf/AGENTS.md
 
-The shared part — roles, commands, the contracts for learnings, log and the ranked list, the
+The shared part — roles, commands, the contracts for learnings, log and the board, the
 rules — stands in [asf/AGENTS.md](asf/AGENTS.md) and belongs to the template. What follows
 applies to this Kasten only; an update never touches it.
 
