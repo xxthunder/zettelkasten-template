@@ -2,7 +2,8 @@
 
 Every test runs the scripts as a subprocess against real directories and real
 git repositories under tmp_path, with HOME pointed at a private directory, so
-nothing touches the real ~/.claude, ~/.gitconfig or ~/.zshrc.
+nothing touches the real ~/.claude, ~/.gitconfig or ~/.zshrc. A fake `claude`
+comes first on the PATH, so no test reaches the real CLI or the network.
 """
 from __future__ import annotations
 
@@ -24,10 +25,38 @@ def home(tmp_path: Path) -> Path:
     return path
 
 
+FAKE_CLAUDE = r'''#!/bin/sh
+# A stand-in for the claude CLI: logs its arguments to $FAKE_CLAUDE_LOG and fails for
+# the argument in $FAKE_CLAUDE_FAILS. `plugin marketplace add` rewrites the user
+# settings the way the real CLI does, dropping each marketplace's autoUpdate.
+echo "$*" >> "$FAKE_CLAUDE_LOG"
+for last; do :; done
+if [ -n "${FAKE_CLAUDE_FAILS:-}" ] && [ "$last" = "$FAKE_CLAUDE_FAILS" ]; then
+    echo "Failed to install $last: not found in marketplace"
+    exit 1
+fi
+settings="$HOME/.claude/settings.json"
+if [ "$1 $2 $3" = "plugin marketplace add" ] && [ -f "$settings" ]; then
+    python3 - "$settings" <<'EOF'
+import json, sys
+data = json.load(open(sys.argv[1]))
+for spec in data.get("extraKnownMarketplaces", {}).values():
+    spec.pop("autoUpdate", None)
+open(sys.argv[1], "w").write(json.dumps(data, indent=2) + "\n")
+EOF
+fi
+'''
+
+
 @pytest.fixture
 def env(home: Path, tmp_path: Path) -> dict[str, str]:
+    tools = tmp_path / "bin"
+    tools.mkdir()
+    (tools / "claude").write_text(FAKE_CLAUDE)
+    (tools / "claude").chmod(0o755)
     return {
-        "PATH": os.environ["PATH"],
+        "PATH": f"{tools}{os.pathsep}{os.environ['PATH']}",
+        "FAKE_CLAUDE_LOG": str(tmp_path / "claude.log"),
         "HOME": str(home),
         "XDG_CONFIG_HOME": str(home / ".config"),
         "GIT_CONFIG_NOSYSTEM": "1",

@@ -8,6 +8,7 @@ commits the result.
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 from conftest import git, kasten
@@ -102,6 +103,26 @@ def test_setup_keeps_a_copy_of_a_global_claude_md_it_did_not_write(template, tmp
     assert backups[0].read_text() == "# my old rules\n"
 
 
+def test_setup_names_the_copy_of_a_global_claude_md_and_where_its_rules_go(template, tmp_path, env, home):
+    (home / ".claude").mkdir()
+    (home / ".claude" / "CLAUDE.md").write_text("# my old rules\n")
+    target = tmp_path / "notes"
+    result = kasten(template, "new", str(target), cwd=tmp_path, env=env)
+    [backup] = (home / ".claude").glob("CLAUDE.md.bak-*")
+    assert str(backup) in result.stdout
+    assert f"{target}/claude/CLAUDE.md" in result.stdout
+
+
+def test_setup_names_the_copy_of_a_hook_it_replaces(template, tmp_path, env, home):
+    target = make(template, tmp_path, env)
+    hook = home / ".claude" / "hooks" / "deny-ansible.py"
+    hook.unlink()
+    hook.write_text("# my own hook\n")
+    result = kasten(target, "setup", cwd=target, env=env)
+    [backup] = (home / ".claude" / "hooks").glob("deny-ansible.py.bak-*")
+    assert str(backup) in result.stdout
+
+
 def test_setup_merges_the_shared_settings_and_keeps_the_machines_own(template, tmp_path, env, home):
     (home / ".claude").mkdir()
     (home / ".claude" / "settings.json").write_text(json.dumps({
@@ -127,6 +148,66 @@ def test_setup_sets_no_remote_variables_without_an_origin(template, tmp_path, en
     make(template, tmp_path, env)
     assert "LOGBOOK_REMOTE" not in settings(home)["env"]
     assert "BOARD_REMOTE" not in settings(home)["env"]
+
+
+def shared_settings(template: Path) -> dict:
+    return json.loads((template / "asf" / "claude" / "settings.json").read_text())
+
+
+def claude_calls(tmp_path: Path) -> list[str]:
+    log = tmp_path / "claude.log"
+    return log.read_text().splitlines() if log.is_file() else []
+
+
+def test_the_shared_settings_declare_the_marketplace_of_every_shared_plugin(template):
+    shared = shared_settings(template)
+    for plugin in shared["enabledPlugins"]:
+        assert plugin.split("@")[1] in shared["extraKnownMarketplaces"], plugin
+
+
+def test_setup_adds_the_shared_marketplaces(template, tmp_path, env):
+    make(template, tmp_path, env)
+    for spec in shared_settings(template)["extraKnownMarketplaces"].values():
+        assert f"plugin marketplace add {spec['source']['repo']}" in claude_calls(tmp_path)
+
+
+def test_setup_installs_every_shared_plugin_after_adding_the_marketplaces(template, tmp_path, env):
+    make(template, tmp_path, env)
+    calls = claude_calls(tmp_path)
+    installs = [call for call in calls if call.startswith("plugin install ")]
+    assert installs == [f"plugin install {plugin}"
+                        for plugin, on in shared_settings(template)["enabledPlugins"].items() if on]
+    assert calls.index(installs[0]) > max(i for i, call in enumerate(calls)
+                                          if call.startswith("plugin marketplace add "))
+
+
+def test_setup_keeps_the_shared_marketplace_settings_the_cli_rewrites(template, tmp_path, env, home):
+    make(template, tmp_path, env)
+    assert settings(home)["extraKnownMarketplaces"]["xxthunder-agentic-skills"]["autoUpdate"] is True
+
+
+def test_setup_names_a_plugin_it_could_not_install_and_finishes(template, tmp_path, env, home):
+    env["FAKE_CLAUDE_FAILS"] = "xxthunder-dev-skills@xxthunder-agentic-skills"
+    target = tmp_path / "notes"
+    result = kasten(template, "new", str(target), cwd=tmp_path, env=env)
+    assert result.returncode == 0, result.stderr
+    assert "xxthunder-dev-skills@xxthunder-agentic-skills" in result.stdout
+    assert "not found in marketplace" in result.stdout
+    assert "plugin install superpowers@claude-plugins-official" in claude_calls(tmp_path)
+    assert (home / ".zshrc").is_file()
+
+
+def test_setup_without_claude_on_the_path_says_so_and_finishes(template, tmp_path, env, home):
+    tools = tmp_path / "no-claude"
+    tools.mkdir()
+    for tool in ("git", "python3"):
+        (tools / tool).symlink_to(shutil.which(tool))
+    env["PATH"] = str(tools)
+    target = tmp_path / "notes"
+    result = kasten(template, "new", str(target), cwd=tmp_path, env=env)
+    assert result.returncode == 0, result.stderr
+    assert "claude" in result.stdout and "setup again" in result.stdout
+    assert (home / ".zshrc").is_file()
 
 
 def test_setup_twice_changes_nothing(template, tmp_path, env, home):

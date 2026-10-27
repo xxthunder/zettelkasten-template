@@ -16,14 +16,19 @@ clone: never edit, commit or push here. Two things are done from here.
    If not, ask the author to set them — identity is never guessed or filled in.
 3. **Make it**: `python3 asf/scripts/kasten.py new <path> --remote <url>` (without
    `--remote` when there is none). It copies `asf/` and the starting files, commits on
-   `develop`, and sets this machine up: `~/.claude/CLAUDE.md`, `~/.claude/settings.json`,
-   the hook, the git workflow settings, the zsh fragment.
+   `develop`, and sets this machine up: `~/.claude/CLAUDE.md`, the plugins,
+   `~/.claude/settings.json`, the hook, the git workflow settings, the zsh fragment.
 4. **Language**: if it is not English, change the language line in the new Kasten's
    `CONVENTIONS.md` → Language and the section *Conversation language* in its `AGENTS.md`,
    and commit that in the new Kasten.
-5. **Push**, when there is a remote: `git -C <path> push -u origin develop`.
-6. **Tell the author** to restart Claude Code and to start sessions in the new Kasten from
-   now on; the plugins named in the settings are installed on the next start.
+5. **Old global instructions**: when `kasten.py` says it kept an old `~/.claude/CLAUDE.md`,
+   show the author what it says and offer to move what still applies into the new Kasten's
+   `claude/CLAUDE.md`; commit that in the new Kasten.
+6. **Push**, when there is a remote: `git -C <path> push -u origin develop`.
+7. **Tell the author** to restart Claude Code and to start sessions in the new Kasten from
+   now on. Name every other backup `kasten.py` reported, and every plugin it could not
+   install — usually git cannot reach GitHub, behind a proxy for instance; once it can,
+   `python3 asf/scripts/kasten.py setup` in the new Kasten installs them.
 
 ## "Update my Zettelkasten"
 

@@ -10,12 +10,15 @@
     kasten.py setup
         Run from a Kasten. Points the user's Claude Code, git and zsh at it:
         ~/.claude/CLAUDE.md imports the shared and the Kasten's own global
-        instructions; ~/.claude/settings.json gets the shared plugins, marketplaces,
-        hook and deny rules, and the logbook and learnings variables for this
-        Kasten — every other setting stays as it is; the hook is linked into
+        instructions; the claude CLI adds the shared marketplaces and installs the
+        shared plugins, naming any it could not install; ~/.claude/settings.json
+        gets the shared plugins, marketplaces,
+        hook and deny rules, and the logbook, learnings and board variables for
+        this Kasten — every other setting stays as it is; the hook is linked into
         ~/.claude/hooks/; the workflow's git settings go into the global config;
         ~/.zshrc sources asf/shell/asf.zsh; the process-inbox skill is linked into
-        the Kasten's .claude/skills/. Running it again changes nothing.
+        the Kasten's .claude/skills/. A file it replaces is kept as
+        <name>.bak-<timestamp>, and it says so. Running it again changes nothing.
 
     kasten.py update <kasten>
         Run from a clone of the template, after `git pull` there. Replaces the
@@ -76,14 +79,22 @@ def write_if_changed(path: Path, text: str) -> None:
     path.write_text(text)
 
 
+def back_up(path: Path) -> Path:
+    """Move path aside as <name>.bak-<timestamp> and say where it went."""
+    backup = path.with_name(f"{path.name}.bak-{time.strftime('%Y%m%d%H%M%S')}")
+    path.rename(backup)
+    print(f"Kept the old {path} as {backup}")
+    return backup
+
+
 def link(path: Path, target: Path) -> None:
-    """Make path a symlink to target; a file or another link in its place is kept as a backup."""
+    """Make path a symlink to target; a file in its place is kept as a backup."""
     if path.is_symlink() and path.resolve() == target.resolve():
         return
     if path.is_symlink():
         path.unlink()
     elif path.exists():
-        path.rename(path.with_name(f"{path.name}.bak-{time.strftime('%Y%m%d%H%M%S')}"))
+        back_up(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.symlink_to(target)
 
@@ -150,6 +161,27 @@ def merge_settings(current: dict, shared: dict, kasten: Path, remote: str | None
     return merged
 
 
+def install_plugins(shared: dict) -> None:
+    """Add the shared marketplaces and install the shared plugins with the claude CLI.
+
+    Left to itself, Claude Code installs them in the background over its first starts;
+    explicitly, the first start has them all. A plugin that fails is named, not fatal.
+    """
+    cli = shutil.which("claude")
+    if cli is None:
+        print("claude is not on the PATH, so no plugins were installed — run setup again once it is")
+        return
+    commands = [["plugin", "marketplace", "add", spec["source"]["repo"]]
+                for spec in shared.get("extraKnownMarketplaces", {}).values()]
+    commands += [["plugin", "install", plugin]
+                 for plugin, enabled in shared.get("enabledPlugins", {}).items() if enabled]
+    for command in commands:
+        result = subprocess.run([cli, *command], capture_output=True, text=True)
+        if result.returncode != 0:
+            said = (result.stdout + result.stderr).strip().splitlines()
+            print(f"Could not run claude {' '.join(command)}: {said[-1] if said else 'no output'}")
+
+
 def setup(kasten: Path) -> None:
     kasten = kasten.resolve()
     home = Path(os.environ["HOME"])
@@ -165,12 +197,15 @@ def setup(kasten: Path) -> None:
     if instructions.is_symlink():
         instructions.unlink()
     elif instructions.is_file() and GENERATED not in instructions.read_text():
-        instructions.rename(instructions.with_name(f"CLAUDE.md.bak-{time.strftime('%Y%m%d%H%M%S')}"))
+        back_up(instructions)
+        print(f"  It is no longer loaded; move what still applies into {kasten}/claude/CLAUDE.md")
     write_if_changed(instructions, text)
 
+    # The CLI rewrites the user settings, so they are read and merged after it ran.
+    shared = json.loads((kasten / "asf" / "claude" / "settings.json").read_text())
+    install_plugins(shared)
     settings_path = claude / "settings.json"
     current = json.loads(settings_path.read_text()) if settings_path.is_file() else {}
-    shared = json.loads((kasten / "asf" / "claude" / "settings.json").read_text())
     merged = merge_settings(current, shared, kasten, remote)
     if merged != current:
         write_if_changed(settings_path, json.dumps(merged, indent=2, ensure_ascii=False) + "\n")

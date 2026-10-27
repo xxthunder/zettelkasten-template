@@ -42,6 +42,7 @@ changes its own files in its root instead — its own `AGENTS.md` imports
   are in `tests/` (`cd asf && uv run --group dev pytest`)
 - `claude/` — the global instructions, the shared part of the user settings (plugins,
   marketplaces, hook, deny rules) and the hook itself; `setup` points `~/.claude` at them
+  and installs the plugins
 - `shell/asf.zsh` — `PATH` for `claude` and `uv`, and `claude-tmux`; `setup` sources it from
   `~/.zshrc`
 - `skills/` — the Kasten's own skills (`process-inbox`); `setup` links them into
