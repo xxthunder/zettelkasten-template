@@ -12,10 +12,10 @@
         ~/.claude/CLAUDE.md imports the shared and the Kasten's own global
         instructions; the claude CLI adds the shared marketplaces and installs the
         shared plugins, naming any it could not install; ~/.claude/settings.json
-        gets the shared plugins, marketplaces,
-        hook and deny rules, and the logbook, learnings and board variables for
-        this Kasten — every other setting stays as it is; the hook is linked into
-        ~/.claude/hooks/; the workflow's git settings go into the global config;
+        gets the shared plugins, marketplaces and the logbook, learnings and board
+        variables for this Kasten, and loses the Ansible hook and deny rules an
+        earlier setup put in, with the hook's link in ~/.claude/hooks/ — every
+        other setting stays as it is; the workflow's git settings go into the global config;
         ~/.zshrc sources asf/shell/asf.zsh; the process-inbox skill is linked into
         the Kasten's .claude/skills/. A file it replaces is kept as
         <name>.bak-<timestamp>, and it says so. Running it again changes nothing.
@@ -148,17 +148,37 @@ def merge_settings(current: dict, shared: dict, kasten: Path, remote: str | None
     merged = json.loads(json.dumps(current))
     merged.setdefault("enabledPlugins", {}).update(shared.get("enabledPlugins", {}))
     merged.setdefault("extraKnownMarketplaces", {}).update(shared.get("extraKnownMarketplaces", {}))
-    deny = merged.setdefault("permissions", {}).setdefault("deny", [])
-    deny.extend(rule for rule in shared.get("permissions", {}).get("deny", []) if rule not in deny)
-    for event, entries in shared.get("hooks", {}).items():
-        present = merged.setdefault("hooks", {}).setdefault(event, [])
-        present.extend(entry for entry in entries if entry not in present)
+    drop_ansible_lock(merged)
     environment = merged.setdefault("env", {})
     for prefix in ("LOGBOOK", "LEARNINGS", "BOARD"):
         environment[f"{prefix}_PATH"] = str(kasten)
         if remote:
             environment[f"{prefix}_REMOTE"] = remote
     return merged
+
+
+ANSIBLE_HOOK = "deny-ansible.py"
+ANSIBLE_DENY = ("Bash(ansible*)", "Bash(molecule*)")
+
+
+def drop_ansible_lock(settings: dict) -> None:
+    """Remove the Ansible hook entry and deny rules an earlier setup put in, and nothing else."""
+    permissions = settings.get("permissions", {})
+    if "deny" in permissions:
+        permissions["deny"] = [rule for rule in permissions["deny"] if rule not in ANSIBLE_DENY]
+        if not permissions["deny"]:
+            del permissions["deny"]
+    if "permissions" in settings and not permissions:
+        del settings["permissions"]
+    hooks = settings.get("hooks", {})
+    if "PreToolUse" in hooks:
+        hooks["PreToolUse"] = [entry for entry in hooks["PreToolUse"]
+                               if not any(ANSIBLE_HOOK in hook.get("command", "")
+                                          for hook in entry.get("hooks", []))]
+        if not hooks["PreToolUse"]:
+            del hooks["PreToolUse"]
+    if "hooks" in settings and not hooks:
+        del settings["hooks"]
 
 
 def install_plugins(shared: dict) -> None:
@@ -210,8 +230,9 @@ def setup(kasten: Path) -> None:
     if merged != current:
         write_if_changed(settings_path, json.dumps(merged, indent=2, ensure_ascii=False) + "\n")
 
-    for hook in sorted((kasten / "asf" / "claude" / "hooks").iterdir()):
-        link(claude / "hooks" / hook.name, hook)
+    old_hook = claude / "hooks" / ANSIBLE_HOOK
+    if old_hook.is_symlink():
+        old_hook.unlink()
 
     for key, value in GIT_CONFIG.items():
         present = subprocess.run(["git", "config", "--global", key], capture_output=True, text=True)

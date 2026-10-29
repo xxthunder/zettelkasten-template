@@ -113,16 +113,6 @@ def test_setup_names_the_copy_of_a_global_claude_md_and_where_its_rules_go(templ
     assert f"{target}/claude/CLAUDE.md" in result.stdout
 
 
-def test_setup_names_the_copy_of_a_hook_it_replaces(template, tmp_path, env, home):
-    target = make(template, tmp_path, env)
-    hook = home / ".claude" / "hooks" / "deny-ansible.py"
-    hook.unlink()
-    hook.write_text("# my own hook\n")
-    result = kasten(target, "setup", cwd=target, env=env)
-    [backup] = (home / ".claude" / "hooks").glob("deny-ansible.py.bak-*")
-    assert str(backup) in result.stdout
-
-
 def test_setup_merges_the_shared_settings_and_keeps_the_machines_own(template, tmp_path, env, home):
     (home / ".claude").mkdir()
     (home / ".claude" / "settings.json").write_text(json.dumps({
@@ -131,11 +121,10 @@ def test_setup_merges_the_shared_settings_and_keeps_the_machines_own(template, t
     target = make(template, tmp_path, env, "--remote", REMOTE)
     s = settings(home)
     assert s["model"] == "opus" and s["theme"] == "dark"
-    assert "Bash(rm -rf /)" in s["permissions"]["deny"]
-    assert "Bash(ansible*)" in s["permissions"]["deny"]
+    assert s["permissions"]["deny"] == ["Bash(rm -rf /)"]
     assert s["enabledPlugins"]["xxthunder-dev-skills@xxthunder-agentic-skills"] is True
     assert "xxthunder-agentic-skills" in s["extraKnownMarketplaces"]
-    assert s["hooks"]["PreToolUse"]
+    assert "hooks" not in s
     assert s["env"]["LOGBOOK_PATH"] == str(target)
     assert s["env"]["LEARNINGS_PATH"] == str(target)
     assert s["env"]["LOGBOOK_REMOTE"] == REMOTE
@@ -163,6 +152,12 @@ def test_the_shared_settings_declare_the_marketplace_of_every_shared_plugin(temp
     shared = shared_settings(template)
     for plugin in shared["enabledPlugins"]:
         assert plugin.split("@")[1] in shared["extraKnownMarketplaces"], plugin
+
+
+def test_the_template_brings_no_ansible_lock(template):
+    shared = shared_settings(template)
+    assert "hooks" not in shared and "permissions" not in shared
+    assert not (template / "asf" / "claude" / "hooks").exists()
 
 
 def test_setup_adds_the_shared_marketplaces(template, tmp_path, env):
@@ -221,11 +216,49 @@ def test_setup_twice_changes_nothing(template, tmp_path, env, home):
     assert list((home / ".claude").glob("*.bak-*")) == []
 
 
-def test_setup_links_the_hook_into_the_kasten(template, tmp_path, env, home):
-    target = make(template, tmp_path, env)
-    hook = home / ".claude" / "hooks" / "deny-ansible.py"
-    assert hook.is_symlink()
-    assert hook.resolve() == (target / "asf" / "claude" / "hooks" / "deny-ansible.py").resolve()
+ANSIBLE_LOCK = {
+    "matcher": "Bash",
+    "hooks": [{"type": "command", "command": "\"$HOME/.claude/hooks/deny-ansible.py\"",
+               "statusMessage": "Checking for Ansible"}],
+}
+OWN_HOOK = {"matcher": "Bash", "hooks": [{"type": "command", "command": "my-own-check"}]}
+
+
+def test_setup_removes_the_ansible_lock_an_earlier_setup_made(template, tmp_path, env, home):
+    hooks = home / ".claude" / "hooks"
+    hooks.mkdir(parents=True)
+    (hooks / "deny-ansible.py").symlink_to(tmp_path / "old-kasten" / "deny-ansible.py")
+    (hooks / "deny-ansible.py.bak-20261027161101").write_text("# my old hook\n")
+    (home / ".claude" / "settings.json").write_text(json.dumps({
+        "permissions": {"deny": ["Bash(ansible*)", "Bash(rm -rf /)", "Bash(molecule*)"]},
+        "hooks": {"PreToolUse": [ANSIBLE_LOCK, OWN_HOOK]},
+    }))
+    make(template, tmp_path, env)
+    s = settings(home)
+    assert s["permissions"]["deny"] == ["Bash(rm -rf /)"]
+    assert s["hooks"] == {"PreToolUse": [OWN_HOOK]}
+    assert not (hooks / "deny-ansible.py").is_symlink()
+    assert (hooks / "deny-ansible.py.bak-20261027161101").read_text() == "# my old hook\n"
+
+
+def test_setup_leaves_no_empty_settings_behind_the_ansible_lock(template, tmp_path, env, home):
+    (home / ".claude").mkdir()
+    (home / ".claude" / "settings.json").write_text(json.dumps({
+        "permissions": {"deny": ["Bash(ansible*)", "Bash(molecule*)"]},
+        "hooks": {"PreToolUse": [ANSIBLE_LOCK]},
+    }))
+    make(template, tmp_path, env)
+    s = settings(home)
+    assert "permissions" not in s
+    assert "hooks" not in s
+
+
+def test_setup_keeps_a_hook_file_of_that_name_it_did_not_link(template, tmp_path, env, home):
+    hooks = home / ".claude" / "hooks"
+    hooks.mkdir(parents=True)
+    (hooks / "deny-ansible.py").write_text("# my own hook\n")
+    make(template, tmp_path, env)
+    assert (hooks / "deny-ansible.py").read_text() == "# my own hook\n"
 
 
 def test_setup_sets_the_workflow_git_config(template, tmp_path, env):
