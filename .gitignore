@@ -1,0 +1,4 @@
+# Python caches of the asf/ scripts and tests, made when they run in this clone
+__pycache__/
+.pytest_cache/
+.venv/

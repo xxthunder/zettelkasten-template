@@ -22,19 +22,22 @@ remotes, names — is never in here.
    `asf/scripts/kasten.py new` — see [AGENTS.md](AGENTS.md).
 4. Restart Claude Code and work from the new Kasten.
 
-The clone stays a clone: it is how updates arrive. The new Kasten is a repository of its own,
-with a history of its own.
+The clone is how updates arrive, and how a Kasten's own changes reach the others (see
+Changing the template). The new Kasten is a repository of its own, with a history of its own.
 
 ## Update a Kasten
 
 `git pull` in the clone, then tell Claude *"Update my Zettelkasten from this template."* It
-runs `asf/scripts/kasten.py update <kasten>`, which replaces the Kasten's `asf/` and commits.
-Everything outside `asf/` is the Kasten's own and is never touched.
+runs `asf/scripts/kasten.py update <kasten>`, which merges the template's changes into the
+Kasten's `asf/`, keeps the Kasten's own changes there, and commits. Everything outside `asf/`
+is the Kasten's own and is never touched.
 
 ## Changing the template
 
-The template is exported from a living Kasten (`kasten.py export`), with a check that stops
-the export when a private name would leak. Changes are made there, not here.
+Changes come from the Kastens: any Kasten changes its `asf/`, tries the change, takes in the
+template with `update` and hands its change on with `kasten.py export`. The export stops when a
+pattern from the Kasten's own `scripts/leak-patterns.txt` matches — fill it with your hosts,
+remotes and names before the first export. See `asf/README.md` → Changing asf/.
 
 ## License
 

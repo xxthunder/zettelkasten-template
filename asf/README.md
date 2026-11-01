@@ -36,8 +36,8 @@ architecture is a Structurizr workspace in
 
 ## What lives here
 
-`asf/` is the template's part of a Kasten. An update replaces this folder as a whole; a Kasten
-changes its own files in its root instead — its own `AGENTS.md` imports
+`asf/` is the template's part of a Kasten, the same in every Kasten. What is particular to one
+Kasten goes into its own files in its root — its own `AGENTS.md` imports
 [AGENTS.md](AGENTS.md) from here, its own `CONVENTIONS.md` adds to
 [CONVENTIONS.md](CONVENTIONS.md).
 
@@ -59,3 +59,20 @@ changes its own files in its root instead — its own `AGENTS.md` imports
 - `skills/` — the Kasten's own skills (`process-inbox`); `setup` links them into
   `.claude/skills/`
 - `seed/` — the files a new Kasten starts with; afterwards they are the Kasten's own
+
+## Changing asf/
+
+Any Kasten can be the origin of a change to `asf/`: it is made and tried in the Kasten that
+needs it, and the template, a clone of
+[zettelkasten-template](https://github.com/xxthunder/zettelkasten-template), carries it to the
+others. Each Kasten records in `.asf-base` the template commit its `asf/` last matched.
+
+1. **Take in first**: `git pull` in the template clone, then
+   `python3 asf/scripts/kasten.py update <kasten>` there. It merges the template's changes
+   since the base into the Kasten's `asf/`, keeps the Kasten's own, and records the new base.
+   Where both sides changed the same lines it leaves conflict markers and commits nothing.
+2. **Hand on**: from the Kasten,
+   `python3 asf/scripts/kasten.py export <clone> --patterns scripts/leak-patterns.txt`. It
+   refuses while the clone is not on the base, and stops when a pattern from the Kasten's own
+   `scripts/leak-patterns.txt` matches. Review, commit and push in the clone.
+3. **Everywhere else**: `update`, as in step 1.

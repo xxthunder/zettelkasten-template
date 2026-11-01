@@ -1,0 +1,9 @@
+# What must never reach the public template.
+#
+# `kasten.py export` checks the template's part of this Kasten (asf/) against
+# these patterns before it writes anything, and stops at the first match. Add one
+# regular expression per line, matched case-insensitively: the names of your hosts
+# and your private network, your remotes, user and family names, e-mail addresses.
+# A line starting with `#` is a comment.
+#
+# The export refuses this file while it holds no pattern.

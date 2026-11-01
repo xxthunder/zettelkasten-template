@@ -1,8 +1,8 @@
 # Zettelkasten Conventions — the Agentic Software Forge part
 
 The rules every Kasten made from the template shares. The Kasten's own `CONVENTIONS.md` in its
-root adds its areas and the language of its notes. This file belongs to the template; an
-update replaces it.
+root adds its areas and the language of its notes. This file belongs to the template and
+reaches every Kasten through it.
 **Claude Code: always read this file and the Kasten's own one before editing notes.**
 
 ## Principles
@@ -32,7 +32,7 @@ One top-level folder per content type. Every Kasten has these:
 
 ```
 asf/          — the template's part: these conventions, the agent contracts, templates,
-                scripts; replaced as a whole by an update
+                scripts; an update merges the template's changes into it
 inbox/        — raw captures, fleeting notes; learning candidates not yet in own words
 learnings/    — learnings: insights that outlive a project — the core of the system
 literature/   — literature notes (summaries of sources)

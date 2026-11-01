@@ -5,7 +5,8 @@
         Run from a clone of the template. Copies asf/ and the files in asf/seed/
         into <target>, which must not exist or be empty, makes the first commit on
         `develop`, sets `origin` when a remote is given, and runs `setup` there.
-        It never pushes.
+        The template commit it was made from is recorded in .asf-base, the base
+        of later updates and exports. It never pushes.
 
     kasten.py setup
         Run from a Kasten. Points the user's Claude Code, git and zsh at it:
@@ -21,15 +22,25 @@
         <name>.bak-<timestamp>, and it says so. Running it again changes nothing.
 
     kasten.py update <kasten>
-        Run from a clone of the template, after `git pull` there. Replaces the
-        Kasten's asf/ with the template's, adds seed files the Kasten does not have
-        yet — never overwrites one it has — runs `setup` and commits. A Kasten with
-        uncommitted changes is refused.
+        Run from a clone of the template, after `git pull` there; the clone and the
+        Kasten must have no uncommitted changes. Merges every change the template
+        made since the Kasten's .asf-base into the Kasten's asf/ and keeps the
+        Kasten's own changes there. Where both changed the same lines, or one side
+        deleted a file the other changed, it leaves the Kasten's working tree with
+        conflict markers, names the files and stops — no `setup`, no commit. A
+        Kasten without .asf-base gets the template's asf/ in place of its own.
+        Then it records the template commit in .asf-base, adds seed files the
+        Kasten does not have yet — never overwrites one it has — runs `setup` and
+        commits.
 
     kasten.py export <dest> --patterns <file>
-        Run from the Kasten the template is made from. Checks asf/ against the
-        patterns in <file> — one regular expression per line, case-insensitive,
-        `#` starts a comment — and stops at the first leak, naming file and line,
+        Run from any Kasten; <dest> is a clone of the template. Gives only from the
+        base: refuses, with nothing written, when the Kasten has no .asf-base, when
+        <dest> is no git repository or has uncommitted changes, or when <dest> —
+        after a fetch — is not on the base or is behind its upstream; then
+        `update` comes first. Checks asf/ against the patterns in <file> — one
+        regular expression per line, case-insensitive, `#` starts a comment, at
+        least one pattern — and stops at the first leak, naming file and line,
         with nothing written. Otherwise <dest> holds asf/ and, in its root, the
         files of asf/template/; whatever else was there goes, a .git stays. It
         never commits. The patterns file names what must not leak, so it lives
@@ -46,6 +57,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -58,11 +70,16 @@ GIT_CONFIG = {
     "fetch.prune": "true",
     "init.defaultBranch": "develop",
 }
+BASE = ".asf-base"
 GENERATED = "<!-- Written by asf/scripts/kasten.py setup. Edit the imported files instead. -->"
 
 
 class Refused(Exception):
     """A precondition does not hold; nothing has been changed."""
+
+
+class Conflicted(Exception):
+    """The merge left conflicts in the working tree; nothing has been committed."""
 
 
 def git(*args: str, cwd: Path) -> str:
@@ -99,6 +116,20 @@ def link(path: Path, target: Path) -> None:
     path.symlink_to(target)
 
 
+def template_revision(source: Path) -> str:
+    return git("rev-parse", "HEAD", cwd=source)
+
+
+def read_base(kasten: Path) -> str | None:
+    """The template commit the Kasten's asf/ last matched, or None if it has none."""
+    path = kasten / BASE
+    return path.read_text().strip() if path.is_file() else None
+
+
+def write_base(kasten: Path, revision: str) -> None:
+    write_if_changed(kasten / BASE, revision + "\n")
+
+
 def seed_files(source: Path) -> list[Path]:
     seed = source / "asf" / "seed"
     return sorted(p.relative_to(seed) for p in seed.rglob("*") if p.is_file())
@@ -132,6 +163,7 @@ def new(target: Path, remote: str | None) -> None:
         target / ".claude" / "settings.json",
         json.dumps({"autoMemoryDirectory": str(target / "memory")}, indent=2) + "\n",
     )
+    write_base(target, template_revision(ROOT))
     git("init", "-q", "-b", "develop", cwd=target)
     git("add", "-A", cwd=target)
     git("commit", "-q", "-m", "chore: new Kasten from the template", cwd=target)
@@ -253,13 +285,97 @@ def setup(kasten: Path) -> None:
 # --- update ------------------------------------------------------------------
 
 
+def blob(repo: Path, revision: str, path: str) -> bytes | None:
+    """The content of path at revision in repo, or None if it does not exist there."""
+    result = subprocess.run(["git", "cat-file", "blob", f"{revision}:{path}"], cwd=str(repo),
+                            capture_output=True)
+    return result.stdout if result.returncode == 0 else None
+
+
+def take(file: Path, content: bytes | None) -> None:
+    """Make the Kasten's file the template's content, or remove it."""
+    if content is None:
+        file.unlink(missing_ok=True)
+        return
+    file.parent.mkdir(parents=True, exist_ok=True)
+    file.write_bytes(content)
+
+
+def follow_mode(file: Path, old_mode: str, new_mode: str) -> None:
+    """Take the template's change of the executable bit, unless the Kasten changed it itself."""
+    was, now = old_mode == "100755", new_mode == "100755"
+    if was == now or not file.is_file():
+        return
+    mode = file.stat().st_mode
+    if bool(mode & 0o100) == was:
+        file.chmod(mode | 0o111 if now else mode & ~0o111)
+
+
+def merge_file(ours: bytes, base: bytes, theirs: bytes) -> tuple[bytes, bool]:
+    """Three-way merge with git merge-file; the merged content and whether it has conflicts."""
+    with tempfile.TemporaryDirectory() as scratch:
+        files = []
+        for name, content in (("ours", ours), ("base", base), ("theirs", theirs)):
+            files.append(Path(scratch) / name)
+            files[-1].write_bytes(content)
+        result = subprocess.run(["git", "merge-file", "-p", "-L", "kasten", "-L", "base", "-L", "template",
+                                 *map(str, files)], capture_output=True)
+    if not 0 <= result.returncode <= 127:
+        raise Refused(f"git merge-file failed: {result.stderr.decode().strip()}")
+    return result.stdout, result.returncode > 0
+
+
+def merge_asf(template: Path, base: str, kasten: Path) -> list[str]:
+    """Merge the template's changes to asf/ since base into the Kasten; return the conflicted paths."""
+    conflicts = []
+    fields = git("diff", "--raw", "-z", "--no-renames", base, "HEAD", "--", "asf/", cwd=template).split("\0")
+    for meta, path in zip(fields[0::2], fields[1::2]):
+        old_mode, new_mode = meta.lstrip(":").split()[:2]
+        file = kasten / path
+        ours = file.read_bytes() if file.is_file() else None
+        before, theirs = blob(template, base, path), blob(template, "HEAD", path)
+        if ours == theirs:
+            pass
+        elif ours == before:
+            take(file, theirs)
+        elif ours is None or theirs is None:
+            conflicts.append(path)
+            continue
+        else:
+            merged, conflicted = merge_file(ours, before or b"", theirs)
+            file.write_bytes(merged)
+            if conflicted:
+                conflicts.append(path)
+        follow_mode(file, old_mode, new_mode)
+    return sorted(conflicts)
+
+
 def update(target: Path) -> None:
     target = target.resolve()
     if not (target / "asf").is_dir() or not (target / "AGENTS.md").is_file():
         raise Refused(f"{target} is no Kasten — it has no asf/ and AGENTS.md")
     if git("status", "--porcelain", cwd=target):
         raise Refused(f"{target} has uncommitted changes — commit or stash them first")
-    copy_asf(ROOT, target)
+    if git("status", "--porcelain", "--", "asf", cwd=ROOT):
+        raise Refused(f"the template clone at {ROOT} has uncommitted changes — commit or stash them first")
+    revision = template_revision(ROOT)
+    base = read_base(target)
+    if base is None:
+        copy_asf(ROOT, target)
+        conflicts = []
+    elif subprocess.run(["git", "cat-file", "-e", f"{base}^{{commit}}"], cwd=str(ROOT),
+                        capture_output=True).returncode != 0:
+        raise Refused(f"the template clone at {ROOT} does not have {base[:7]}, the Kasten's base"
+                      " — `git pull` there and try again")
+    elif revision != base and subprocess.run(["git", "merge-base", "--is-ancestor", revision, base],
+                                             cwd=str(ROOT), capture_output=True).returncode == 0:
+        raise Refused(f"the template clone at {ROOT} is at {revision[:7]}, behind the Kasten's base"
+                      f" {base[:7]} — `git pull` there and try again")
+    else:
+        conflicts = merge_asf(ROOT, base, target)
+    write_base(target, revision)
+    if conflicts:
+        raise Conflicted(f"conflicts in {', '.join(conflicts)} — resolve them, commit, then run update again")
     copy_missing_seed(ROOT, target)
     setup(target)
     git("add", "-A", cwd=target)
@@ -279,7 +395,10 @@ def read_patterns(path: Path) -> list[re.Pattern]:
     if not path.is_file():
         raise Refused(f"no patterns file at {path} — the export needs the list of what must not leak")
     lines = (line.strip() for line in path.read_text().splitlines())
-    return [re.compile(line, re.IGNORECASE) for line in lines if line and not line.startswith("#")]
+    checks = [re.compile(line, re.IGNORECASE) for line in lines if line and not line.startswith("#")]
+    if not checks:
+        raise Refused(f"{path} has no pattern — add what must not leak, one regular expression per line")
+    return checks
 
 
 def leaks(source: Path, checks: list[re.Pattern]) -> list[str]:
@@ -299,12 +418,40 @@ def leaks(source: Path, checks: list[re.Pattern]) -> list[str]:
     return found
 
 
+def has_upstream(repo: Path) -> bool:
+    result = subprocess.run(["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
+                            cwd=str(repo), capture_output=True, text=True)
+    return result.returncode == 0
+
+
+def check_on_base(kasten: Path, dest: Path) -> None:
+    """Refuse unless the template clone at dest is clean, on the Kasten's base and up to date."""
+    base = read_base(kasten)
+    if base is None:
+        raise Refused(f"{kasten} has no {BASE} — run `kasten.py update` from the template clone first")
+    toplevel = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=str(dest),
+                              capture_output=True, text=True) if dest.is_dir() else None
+    if not toplevel or toplevel.returncode != 0 or Path(toplevel.stdout.strip()).resolve() != dest:
+        raise Refused(f"{dest} is no git repository — export into a clone of the template")
+    if git("status", "--porcelain", cwd=dest):
+        raise Refused(f"{dest} has uncommitted changes — commit or stash them first")
+    if has_upstream(dest):
+        git("fetch", "-q", cwd=dest)
+        if git("rev-list", "--count", "HEAD..@{u}", cwd=dest) != "0":
+            raise Refused(f"{dest} is behind its upstream — `git pull` there, then run `kasten.py update` first")
+    head = git("rev-parse", "HEAD", cwd=dest)
+    if head != base:
+        raise Refused(f"the template at {dest} is at {head[:7]}, this Kasten's asf/ at {base[:7]}"
+                      " — run `kasten.py update` from the template clone first")
+
+
 def export(dest: Path, patterns: Path) -> None:
     dest = dest.resolve()
-    found = leaks(ROOT, read_patterns(patterns.resolve()))
+    checks = read_patterns(patterns.resolve())
+    check_on_base(ROOT, dest)
+    found = leaks(ROOT, checks)
     if found:
         raise Refused("leak check failed, nothing exported:\n  " + "\n  ".join(found))
-    dest.mkdir(parents=True, exist_ok=True)
     for entry in dest.iterdir():
         if entry.name == ".git":
             continue
@@ -337,8 +484,8 @@ def main(argv: list[str]) -> int:
             export(args.dest, args.patterns)
         else:
             update(args.kasten)
-    except Refused as refusal:
-        print(f"kasten.py: {refusal}", file=sys.stderr)
+    except (Refused, Conflicted) as stop:
+        print(f"kasten.py: {stop}", file=sys.stderr)
         return 1
     return 0
 

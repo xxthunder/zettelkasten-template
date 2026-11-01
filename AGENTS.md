@@ -1,7 +1,8 @@
 # AGENTS.md — the Kasten template
 
-This repository is a clone of the template a Zettelkasten is made from. It stays a clean
-clone: never edit, commit or push here. Two things are done from here.
+This repository is a clone of the template a Zettelkasten is made from. Changes arrive here
+only through `kasten.py export` from a Kasten; the author reviews, commits and pushes them.
+Three things are done here.
 
 ## "Make me a new Zettelkasten"
 
@@ -35,5 +36,18 @@ clone: never edit, commit or push here. Two things are done from here.
 1. `git pull` here.
 2. `python3 asf/scripts/kasten.py update <kasten>` — it refuses a Kasten with uncommitted
    changes; then ask the author to commit or stash first.
-3. Show the commit it made (`git -C <kasten> show --stat`), and push it after the author
+3. When it reports conflicts, show the author each named file in the Kasten, resolve the
+   markers with them, commit in the Kasten, and run `update` again.
+4. Show the commit it made (`git -C <kasten> show --stat`), and push it after the author
    agrees.
+
+## "Hand on a change from my Zettelkasten"
+
+1. Update the Kasten first, as above — the export refuses a Kasten whose base is not this
+   clone's commit.
+2. From the Kasten: `python3 asf/scripts/kasten.py export <this clone> --patterns
+   scripts/leak-patterns.txt`. It stops when a pattern matches; show the author the lines it
+   names.
+3. Show the author `git status` and `git diff` here, commit with a message that says what
+   changed and why, and push after the author agrees.
+4. Update the Kasten again: only its `.asf-base` moves.

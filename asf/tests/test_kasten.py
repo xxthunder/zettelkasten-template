@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
 from pathlib import Path
 
 from conftest import git, kasten
@@ -21,6 +22,11 @@ def make(template: Path, tmp_path: Path, env: dict[str, str], *args: str) -> Pat
     result = kasten(template, "new", str(target), *args, cwd=tmp_path, env=env)
     assert result.returncode == 0, result.stderr
     return target
+
+
+def commit(repo: Path, env: dict[str, str], message: str = "change") -> None:
+    git("add", "-A", cwd=repo, env=env)
+    git("commit", "-q", "-m", message, cwd=repo, env=env)
 
 
 def settings(home: Path) -> dict:
@@ -71,6 +77,18 @@ def test_new_leaves_caches_behind(template, tmp_path, env):
 def test_new_sets_the_machine_up(template, tmp_path, env, home):
     target = make(template, tmp_path, env)
     assert str(target) in (home / ".claude" / "CLAUDE.md").read_text()
+
+
+def test_new_records_the_template_commit_as_its_base(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    assert (target / ".asf-base").read_text() == git("rev-parse", "HEAD", cwd=template, env=env) + "\n"
+    assert git("ls-files", ".asf-base", cwd=target, env=env) == ".asf-base"
+
+
+def test_new_seeds_a_leak_patterns_file_that_holds_no_pattern(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    lines = (target / "scripts" / "leak-patterns.txt").read_text().splitlines()
+    assert lines and all(not line.strip() or line.startswith("#") for line in lines)
 
 
 def test_new_refuses_a_target_that_is_not_empty(template, tmp_path, env):
@@ -287,11 +305,21 @@ def test_setup_links_the_process_inbox_skill(template, tmp_path, env):
 # --- update ------------------------------------------------------------------
 
 
-def test_update_replaces_asf_and_commits(template, tmp_path, env):
+def update(template: Path, target: Path, tmp_path: Path, env: dict[str, str]) -> subprocess.CompletedProcess:
+    return kasten(template, "update", str(target), cwd=tmp_path, env=env)
+
+
+def first_line_replaced(path: Path, line: str) -> None:
+    lines = path.read_text().splitlines(keepends=True)
+    path.write_text(line + "\n" + "".join(lines[1:]))
+
+
+def test_update_takes_the_templates_changes_and_commits(template, tmp_path, env):
     target = make(template, tmp_path, env)
     (template / "asf" / "NEW.md").write_text("new\n")
     (template / "asf" / "README.md").unlink()
-    result = kasten(template, "update", str(target), cwd=tmp_path, env=env)
+    commit(template, env)
+    result = update(template, target, tmp_path, env)
     assert result.returncode == 0, result.stderr
     assert (target / "asf" / "NEW.md").read_text() == "new\n"
     assert not (target / "asf" / "README.md").exists()
@@ -305,10 +333,201 @@ def test_update_adds_new_seed_files_and_keeps_the_kastens_own(template, tmp_path
     git("commit", "-q", "-am", "log", cwd=target, env=env)
     (template / "asf" / "seed" / "engineering" / "log.md").write_text("fresh\n")
     (template / "asf" / "seed" / "glossary.md").write_text("glossary\n")
-    result = kasten(template, "update", str(target), cwd=tmp_path, env=env)
+    commit(template, env)
+    result = update(template, target, tmp_path, env)
     assert result.returncode == 0, result.stderr
     assert (target / "engineering" / "log.md").read_text() == "my log\n"
     assert (target / "glossary.md").read_text() == "glossary\n"
+
+
+def test_update_records_the_template_commit_as_base(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    (template / "asf" / "NEW.md").write_text("new\n")
+    commit(template, env)
+    result = update(template, target, tmp_path, env)
+    assert result.returncode == 0, result.stderr
+    assert (target / ".asf-base").read_text() == git("rev-parse", "HEAD", cwd=template, env=env) + "\n"
+
+
+def test_update_without_a_base_replaces_asf_and_records_one(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    git("rm", "-q", ".asf-base", cwd=target, env=env)
+    (target / "asf" / "AGENTS.md").write_text("changed in the Kasten\n")
+    commit(target, env)
+    (template / "asf" / "NEW.md").write_text("new\n")
+    commit(template, env)
+    result = update(template, target, tmp_path, env)
+    assert result.returncode == 0, result.stderr
+    assert (target / "asf" / "AGENTS.md").read_text() == (template / "asf" / "AGENTS.md").read_text()
+    assert (target / ".asf-base").read_text() == git("rev-parse", "HEAD", cwd=template, env=env) + "\n"
+
+
+def test_update_keeps_the_kastens_own_changes_to_asf(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    (target / "asf" / "AGENTS.md").write_text("changed in the Kasten\n")
+    commit(target, env)
+    (template / "asf" / "README.md").write_text("changed in the template\n")
+    commit(template, env)
+    result = update(template, target, tmp_path, env)
+    assert result.returncode == 0, result.stderr
+    assert (target / "asf" / "AGENTS.md").read_text() == "changed in the Kasten\n"
+    assert (target / "asf" / "README.md").read_text() == "changed in the template\n"
+
+
+def test_update_merges_changes_to_different_lines_of_one_file(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    first_line_replaced(target / "asf" / "AGENTS.md", "# changed in the Kasten")
+    commit(target, env)
+    with (template / "asf" / "AGENTS.md").open("a") as agents:
+        agents.write("appended in the template\n")
+    commit(template, env)
+    result = update(template, target, tmp_path, env)
+    assert result.returncode == 0, result.stderr
+    merged = (target / "asf" / "AGENTS.md").read_text()
+    assert merged.startswith("# changed in the Kasten\n")
+    assert merged.endswith("appended in the template\n")
+    assert "<<<<<<<" not in merged
+
+
+def test_update_takes_new_and_deleted_files_and_keeps_the_kastens_new_file(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    (target / "asf" / "MINE.md").write_text("mine\n")
+    commit(target, env)
+    (template / "asf" / "NEW.md").write_text("new\n")
+    (template / "asf" / "README.md").unlink()
+    commit(template, env)
+    result = update(template, target, tmp_path, env)
+    assert result.returncode == 0, result.stderr
+    assert (target / "asf" / "MINE.md").read_text() == "mine\n"
+    assert (target / "asf" / "NEW.md").read_text() == "new\n"
+    assert not (target / "asf" / "README.md").exists()
+
+
+def test_update_keeps_the_mode_of_a_new_executable(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    script = template / "asf" / "scripts" / "new.sh"
+    script.write_text("#!/bin/sh\n")
+    script.chmod(0o755)
+    commit(template, env)
+    result = update(template, target, tmp_path, env)
+    assert result.returncode == 0, result.stderr
+    assert (target / "asf" / "scripts" / "new.sh").stat().st_mode & 0o111
+
+
+def test_update_takes_a_mode_change_of_the_template(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    (template / "asf" / "README.md").chmod(0o755)
+    commit(template, env)
+    result = update(template, target, tmp_path, env)
+    assert result.returncode == 0, result.stderr
+    assert (target / "asf" / "README.md").stat().st_mode & 0o111
+
+
+def test_update_takes_a_mode_change_on_a_merged_file(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    first_line_replaced(target / "asf" / "AGENTS.md", "# changed in the Kasten")
+    commit(target, env)
+    with (template / "asf" / "AGENTS.md").open("a") as agents:
+        agents.write("appended in the template\n")
+    (template / "asf" / "AGENTS.md").chmod(0o755)
+    commit(template, env)
+    result = update(template, target, tmp_path, env)
+    assert result.returncode == 0, result.stderr
+    assert (target / "asf" / "AGENTS.md").read_text().startswith("# changed in the Kasten\n")
+    assert (target / "asf" / "AGENTS.md").stat().st_mode & 0o111
+
+
+def test_update_takes_a_file_whose_name_is_not_ascii(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    (template / "asf" / "Übersicht.md").write_text("new\n")
+    commit(template, env)
+    result = update(template, target, tmp_path, env)
+    assert result.returncode == 0, result.stderr
+    assert (target / "asf" / "Übersicht.md").read_text() == "new\n"
+
+
+def test_update_accepts_a_file_both_sides_deleted(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    (target / "asf" / "README.md").unlink()
+    commit(target, env)
+    (template / "asf" / "README.md").unlink()
+    commit(template, env)
+    result = update(template, target, tmp_path, env)
+    assert result.returncode == 0, result.stderr
+    assert not (target / "asf" / "README.md").exists()
+
+
+def test_update_refuses_a_template_clone_behind_the_base(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    (template / "asf" / "NEW.md").write_text("new\n")
+    commit(template, env)
+    assert update(template, target, tmp_path, env).returncode == 0
+    git("reset", "-q", "--hard", "HEAD~1", cwd=template, env=env)
+    result = update(template, target, tmp_path, env)
+    assert result.returncode != 0
+    assert "behind" in result.stderr
+    assert (target / "asf" / "NEW.md").read_text() == "new\n"
+    assert git("status", "--porcelain", cwd=target, env=env) == ""
+
+
+def test_update_leaves_markers_on_a_conflict_and_does_not_commit(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    first_line_replaced(target / "asf" / "AGENTS.md", "# changed in the Kasten")
+    commit(target, env)
+    first_line_replaced(template / "asf" / "AGENTS.md", "# changed in the template")
+    commit(template, env)
+    calls = (tmp_path / "claude.log").read_text()
+    result = update(template, target, tmp_path, env)
+    assert result.returncode != 0
+    assert "asf/AGENTS.md" in result.stderr
+    assert "<<<<<<< kasten" in (target / "asf" / "AGENTS.md").read_text()
+    assert git("rev-list", "--count", "HEAD", cwd=target, env=env) == "2"
+    assert (tmp_path / "claude.log").read_text() == calls
+
+
+def test_update_reports_a_file_one_side_deleted_and_the_other_changed(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    (target / "asf" / "README.md").write_text("changed in the Kasten\n")
+    commit(target, env)
+    (template / "asf" / "README.md").unlink()
+    commit(template, env)
+    result = update(template, target, tmp_path, env)
+    assert result.returncode != 0
+    assert "asf/README.md" in result.stderr
+    assert (target / "asf" / "README.md").read_text() == "changed in the Kasten\n"
+
+
+def test_update_refuses_a_template_clone_with_uncommitted_changes(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    (template / "asf" / "NEW.md").write_text("new\n")
+    result = update(template, target, tmp_path, env)
+    assert result.returncode != 0
+    assert "uncommitted" in result.stderr
+    assert not (target / "asf" / "NEW.md").exists()
+    assert git("status", "--porcelain", cwd=target, env=env) == ""
+
+
+def test_update_refuses_a_base_the_template_clone_does_not_have(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    (target / ".asf-base").write_text("0" * 40 + "\n")
+    commit(target, env)
+    result = update(template, target, tmp_path, env)
+    assert result.returncode != 0
+    assert "git pull" in result.stderr
+    assert git("status", "--porcelain", cwd=target, env=env) == ""
+
+
+def test_update_after_an_export_only_moves_the_base(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    (target / "asf" / "AGENTS.md").write_text("changed in the Kasten\n")
+    commit(target, env)
+    assert export(target, template, tmp_path, env, LEAK).returncode == 0
+    commit(template, env)
+    result = update(template, target, tmp_path, env)
+    assert result.returncode == 0, result.stderr
+    assert git("show", "--name-only", "--format=", "HEAD", cwd=target, env=env) == ".asf-base"
+    second = export(target, template, tmp_path, env, LEAK)
+    assert second.returncode == 0, second.stderr
 
 
 def test_update_without_changes_makes_no_commit(template, tmp_path, env):
@@ -359,59 +578,132 @@ def patterns(tmp_path: Path, *lines: str) -> Path:
     return path
 
 
+def export(source: Path, dest: Path, tmp_path: Path, env: dict[str, str],
+           *lines: str) -> subprocess.CompletedProcess:
+    """Export the asf/ of the Kasten at source into the template clone at dest."""
+    return kasten(source, "export", str(dest), "--patterns", str(patterns(tmp_path, *lines)),
+                  cwd=tmp_path, env=env)
+
+
 def test_export_writes_asf_and_the_template_root(template, tmp_path, env):
-    dest = tmp_path / "public"
-    result = kasten(template, "export", str(dest), "--patterns", str(patterns(tmp_path, LEAK)),
-                    cwd=tmp_path, env=env)
+    target = make(template, tmp_path, env)
+    result = export(target, template, tmp_path, env, LEAK)
     assert result.returncode == 0, result.stderr
-    assert (dest / "asf" / "AGENTS.md").is_file()
+    assert (template / "asf" / "AGENTS.md").is_file()
     for name in ("README.md", "AGENTS.md", "CLAUDE.md", "LICENSE"):
-        assert (dest / name).is_file(), name
+        assert (template / name).is_file(), name
+
+
+def test_export_gives_exactly_the_kastens_changes(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    (target / "asf" / "AGENTS.md").write_text("changed in the Kasten\n")
+    commit(target, env)
+    result = export(target, template, tmp_path, env, LEAK)
+    assert result.returncode == 0, result.stderr
+    assert git("status", "--porcelain", "--", "asf", cwd=template, env=env) == "M asf/AGENTS.md"
 
 
 def test_export_replaces_what_was_there_but_keeps_git(template, tmp_path, env):
-    dest = tmp_path / "public"
-    dest.mkdir()
-    git("init", "-q", cwd=dest, env=env)
-    (dest / "stale.md").write_text("old\n")
-    result = kasten(template, "export", str(dest), "--patterns", str(patterns(tmp_path)),
-                    cwd=tmp_path, env=env)
+    (template / "stale.md").write_text("old\n")
+    commit(template, env)
+    target = make(template, tmp_path, env)
+    result = export(target, template, tmp_path, env, LEAK)
     assert result.returncode == 0, result.stderr
-    assert not (dest / "stale.md").exists()
-    assert (dest / ".git").is_dir()
+    assert not (template / "stale.md").exists()
+    assert (template / ".git").is_dir()
 
 
 def test_export_leaves_caches_behind(template, tmp_path, env):
-    (template / "asf" / "scripts" / "__pycache__").mkdir()
-    (template / "asf" / "scripts" / "__pycache__" / "kasten.pyc").write_text("x")
-    dest = tmp_path / "public"
-    result = kasten(template, "export", str(dest), "--patterns", str(patterns(tmp_path)),
-                    cwd=tmp_path, env=env)
+    target = make(template, tmp_path, env)
+    (target / "asf" / "scripts" / "__pycache__").mkdir()
+    (target / "asf" / "scripts" / "__pycache__" / "kasten.pyc").write_text("x")
+    result = export(target, template, tmp_path, env, LEAK)
     assert result.returncode == 0, result.stderr
-    assert not (dest / "asf" / "scripts" / "__pycache__").exists()
+    assert not (template / "asf" / "scripts" / "__pycache__").exists()
 
 
 def test_export_stops_at_a_leak_and_writes_nothing(template, tmp_path, env):
-    (template / "asf" / "CONVENTIONS.md").write_text(f"ok\nssh to {LEAK.title()}.lan\n")
-    dest = tmp_path / "public"
-    result = kasten(template, "export", str(dest), "--patterns", str(patterns(tmp_path, LEAK)),
-                    cwd=tmp_path, env=env)
+    target = make(template, tmp_path, env)
+    (target / "asf" / "CONVENTIONS.md").write_text(f"ok\nssh to {LEAK.title()}.lan\n")
+    result = export(target, template, tmp_path, env, LEAK)
     assert result.returncode != 0
     assert "asf/CONVENTIONS.md:2" in result.stderr
     assert LEAK in result.stderr
-    assert not dest.exists()
+    assert git("status", "--porcelain", cwd=template, env=env) == ""
 
 
 def test_export_checks_the_template_root_files_too(template, tmp_path, env):
-    (template / "asf" / "template" / "README.md").write_text(f"by {LEAK}\n")
-    result = kasten(template, "export", str(tmp_path / "public"),
-                    "--patterns", str(patterns(tmp_path, LEAK)), cwd=tmp_path, env=env)
+    target = make(template, tmp_path, env)
+    (target / "asf" / "template" / "README.md").write_text(f"by {LEAK}\n")
+    result = export(target, template, tmp_path, env, LEAK)
     assert result.returncode != 0
     assert "asf/template/README.md:1" in result.stderr
 
 
 def test_export_needs_a_patterns_file(template, tmp_path, env):
-    result = kasten(template, "export", str(tmp_path / "public"),
-                    "--patterns", str(tmp_path / "missing.txt"), cwd=tmp_path, env=env)
+    target = make(template, tmp_path, env)
+    result = kasten(target, "export", str(template), "--patterns", str(tmp_path / "missing.txt"),
+                    cwd=tmp_path, env=env)
     assert result.returncode != 0
     assert "missing.txt" in result.stderr
+
+
+def test_export_refuses_a_patterns_file_that_holds_no_pattern(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    result = export(target, template, tmp_path, env)
+    assert result.returncode != 0
+    assert "no pattern" in result.stderr
+    assert git("status", "--porcelain", cwd=template, env=env) == ""
+
+
+def test_export_refuses_a_kasten_without_a_base(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    git("rm", "-q", ".asf-base", cwd=target, env=env)
+    commit(target, env)
+    result = export(target, template, tmp_path, env, LEAK)
+    assert result.returncode != 0
+    assert "update" in result.stderr
+    assert git("status", "--porcelain", cwd=template, env=env) == ""
+
+
+def test_export_refuses_a_template_clone_with_uncommitted_changes(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    (target / "asf" / "AGENTS.md").write_text("changed in the Kasten\n")
+    (template / "asf" / "NOTE.md").write_text("draft\n")
+    result = export(target, template, tmp_path, env, LEAK)
+    assert result.returncode != 0
+    assert "uncommitted" in result.stderr
+    assert git("status", "--porcelain", cwd=template, env=env) == "?? asf/NOTE.md"
+
+
+def test_export_refuses_when_the_template_moved_past_the_base(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    (template / "asf" / "NEW.md").write_text("from the other Kasten\n")
+    commit(template, env)
+    result = export(target, template, tmp_path, env, LEAK)
+    assert result.returncode != 0
+    assert "update" in result.stderr
+    assert git("status", "--porcelain", cwd=template, env=env) == ""
+    assert (template / "asf" / "NEW.md").is_file()
+
+
+def test_export_refuses_a_clone_behind_its_upstream(template, tmp_path, env):
+    public = tmp_path / "public"
+    git("clone", "-q", str(template), str(public), cwd=tmp_path, env=env)
+    target = make(template, tmp_path, env)
+    (template / "asf" / "NEW.md").write_text("from the other Kasten\n")
+    commit(template, env)
+    result = export(target, public, tmp_path, env, LEAK)
+    assert result.returncode != 0
+    assert "behind" in result.stderr
+    assert git("status", "--porcelain", cwd=public, env=env) == ""
+
+
+def test_export_refuses_a_destination_that_is_no_git_repository(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    plain = tmp_path / "plain"
+    plain.mkdir()
+    result = export(target, plain, tmp_path, env, LEAK)
+    assert result.returncode != 0
+    assert "no git repository" in result.stderr
+    assert list(plain.iterdir()) == []

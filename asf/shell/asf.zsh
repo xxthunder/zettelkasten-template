@@ -1,5 +1,5 @@
 # Agentic Software Forge — sourced from ~/.zshrc by `asf/scripts/kasten.py setup`.
-# Belongs to the template; an update replaces it.
+# Belongs to the template; machine-specific lines go into ~/.zshrc.
 
 # claude and uv install into ~/.local/bin.
 case ":$PATH:" in

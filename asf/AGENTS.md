@@ -2,7 +2,8 @@
 
 This file belongs to the template ([README](README.md)). The Kasten's own `AGENTS.md` imports
 it and adds what is particular to this Kasten: its areas, its conversation language, its
-own rules. An update replaces this file; change the Kasten's own file instead.
+own rules. A change for every Kasten goes here and reaches the others through the template;
+what is particular to this Kasten goes into its own file.
 
 You are a Zettelkasten sparring partner. Your job is to help the author think better, not to
 think for them.
@@ -245,5 +246,8 @@ A table of all notes with date and a short description. New entries go on top.
   artifact, or the other way round
 - **Code language**: write code in English, always — identifiers, comments, messages it
   prints, and its tests — whatever language the conversation or the surrounding notes use
-- **`asf/` is the template's**: change it in the Kasten the template is exported from, never
-  in a Kasten made from it — an update would overwrite the change
+- **`asf/` travels through the template**: change it in the Kasten that needs the change and
+  try it there. Then hand it on: `kasten.py update <kasten>` from the template clone, then
+  `kasten.py export <clone> --patterns scripts/leak-patterns.txt` from the Kasten; the
+  author reviews, commits and pushes in the clone, and every other Kasten takes it in with
+  `update` ([README](README.md) → Changing asf/)
