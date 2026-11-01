@@ -115,5 +115,25 @@ area_files | tr '\n' '\0' | xargs -0 grep -hoP 'tags: \[([^\]]*)\]' 2>/dev/null 
     echo "    $count × $tag"
   done
 
+# 6. The architecture: the Structurizr workspace must parse and validate. The
+#    check runs Structurizr in docker; without docker it is skipped with a warning,
+#    so the rest of the lint still runs anywhere.
+WORKSPACE=asf/architecture/workspace.dsl
+STRUCTURIZR_IMAGE=${STRUCTURIZR_IMAGE:-structurizr/structurizr:latest}
+if [ -f "$WORKSPACE" ]; then
+  echo "--- Architecture ---"
+  if ! command -v docker > /dev/null 2>&1; then
+    echo "  ⚠️  Architecture not validated: docker is not installed"
+    WARNINGS=$((WARNINGS + 1))
+  elif output=$(docker run --rm -v "$PWD/asf/architecture:/workspace:ro" "$STRUCTURIZR_IMAGE" \
+      validate -w /workspace/workspace.dsl 2>&1); then
+    echo "  ✅ Architecture: $WORKSPACE is valid"
+  else
+    echo "  ❌ Invalid architecture: $WORKSPACE"
+    echo "$output" | grep -iE "error|exception" | head -5 | sed 's/^/     /'
+    ERRORS=$((ERRORS + 1))
+  fi
+fi
+
 echo ""
 echo "Done: $ERRORS errors, $WARNINGS warnings"

@@ -26,6 +26,14 @@ worktree on a feature branch → close the item — its card leaves the board �
 Every step is a skill, and every step writes into a repo, never into a chat. The log is
 optional; the board works without it.
 
+Inside the worktree the work runs as a **closed loop**: an implementer subagent writes the
+test and the code for each task, a reviewer subagent judges the diff against the
+repository's rubric, and the loop ends only when the repository's gate — one script,
+`scripts/gate` — is green. The author confirms an evidence package in the pull request
+instead of reading the diff. The contract is `Closed loop` in [AGENTS.md](AGENTS.md); the
+architecture is a Structurizr workspace in
+[architecture/workspace.dsl](architecture/workspace.dsl).
+
 ## What lives here
 
 `asf/` is the template's part of a Kasten. An update replaces this folder as a whole; a Kasten
@@ -33,8 +41,11 @@ changes its own files in its root instead — its own `AGENTS.md` imports
 [AGENTS.md](AGENTS.md) from here, its own `CONVENTIONS.md` adds to
 [CONVENTIONS.md](CONVENTIONS.md).
 
-- [AGENTS.md](AGENTS.md) — the agent's roles and the contracts for learnings, log and the
-  board
+- [AGENTS.md](AGENTS.md) — the agent's roles and the contracts for learnings, log, the
+  board and the closed loop
+- [rubric.md](rubric.md) — what a reviewer in the closed loop judges in every repository
+- `architecture/workspace.dsl` — the closed loop as a Structurizr workspace; `lint.sh`
+  validates it
 - [CONVENTIONS.md](CONVENTIONS.md) — principles, file names, frontmatter, linking, language
 - `templates/` — a template per note type: `learning`, `literature`, `engineering`
 - `scripts/` — `lint.sh`, `review.sh`, `new-zettel.sh`, and `kasten.py`, which makes a new
