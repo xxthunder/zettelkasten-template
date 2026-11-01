@@ -114,3 +114,16 @@ def test_without_docker_the_check_is_a_warning_not_an_error(tmp_path):
                             env={"PATH": no_docker_path(tmp_path)})
     assert "Architecture not validated: docker is not installed" in result.stdout
     assert "Done: 0 errors, 1 warnings" in result.stdout
+
+
+def test_the_default_image_names_its_registry(tmp_path):
+    """Podman resolves no short image names unless the machine configures a registry."""
+    write(tmp_path / "asf" / "architecture" / "workspace.dsl", VALID_DSL)
+    path = no_docker_path(tmp_path)
+    called = tmp_path / "docker-args"
+    docker = Path(path) / "docker"
+    docker.write_text(f'#!{shutil.which("bash")}\necho "$@" > {called}\n')
+    docker.chmod(0o755)
+    subprocess.run([shutil.which("bash"), str(LINT)], cwd=str(tmp_path), capture_output=True, text=True,
+                   env={"PATH": path})
+    assert " docker.io/structurizr/structurizr:latest " in called.read_text()

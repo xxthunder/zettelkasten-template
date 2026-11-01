@@ -119,7 +119,7 @@ area_files | tr '\n' '\0' | xargs -0 grep -hoP 'tags: \[([^\]]*)\]' 2>/dev/null 
 #    check runs Structurizr in docker; without docker it is skipped with a warning,
 #    so the rest of the lint still runs anywhere.
 WORKSPACE=asf/architecture/workspace.dsl
-STRUCTURIZR_IMAGE=${STRUCTURIZR_IMAGE:-structurizr/structurizr:latest}
+STRUCTURIZR_IMAGE=${STRUCTURIZR_IMAGE:-docker.io/structurizr/structurizr:latest}
 if [ -f "$WORKSPACE" ]; then
   echo "--- Architecture ---"
   if ! command -v docker > /dev/null 2>&1; then
