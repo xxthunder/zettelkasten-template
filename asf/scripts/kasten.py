@@ -14,11 +14,12 @@
         instructions; the claude CLI adds the shared marketplaces and installs the
         shared plugins, naming any it could not install; ~/.claude/settings.json
         gets the shared plugins, marketplaces and the logbook, learnings and board
-        variables for this Kasten, takes the proxy variables from setup's own
-        environment — removing those the environment no longer has — and loses
-        the Ansible hook and deny rules an earlier setup put in, with the hook's
-        link in ~/.claude/hooks/ — every
-        other setting stays as it is; the workflow's git settings go into the global config;
+        variables for this Kasten and the repo-rules hook of this Kasten's
+        asf/claude/hooks/, in place of one another Kasten put in, takes the proxy
+        variables from setup's own environment — removing those the environment no
+        longer has — and loses the Ansible hook and deny rules an earlier setup put
+        in, with the hook's link in ~/.claude/hooks/ — every other setting stays as
+        it is; the workflow's git settings go into the global config;
         ~/.zshrc sources asf/shell/asf.zsh; the process-inbox skill is linked into
         the Kasten's .claude/skills/. A file it replaces is kept as
         <name>.bak-<timestamp>, and it says so. Running it again changes nothing.
@@ -189,6 +190,7 @@ def merge_settings(current: dict, shared: dict, kasten: Path, remote: str | None
     merged.setdefault("enabledPlugins", {}).update(shared.get("enabledPlugins", {}))
     merged.setdefault("extraKnownMarketplaces", {}).update(shared.get("extraKnownMarketplaces", {}))
     drop_ansible_lock(merged)
+    hook_in_repo_rules(merged, kasten)
     environment = merged.setdefault("env", {})
     for prefix in ("LOGBOOK", "LEARNINGS", "BOARD"):
         environment[f"{prefix}_PATH"] = str(kasten)
@@ -224,6 +226,19 @@ def drop_ansible_lock(settings: dict) -> None:
             del hooks["PreToolUse"]
     if "hooks" in settings and not hooks:
         del settings["hooks"]
+
+
+REPO_RULES_HOOK = "repo-rules.py"
+REPO_RULES_TOOLS = "Read|Edit|Write|NotebookEdit|Glob|Grep|Bash"
+
+
+def hook_in_repo_rules(settings: dict, kasten: Path) -> None:
+    """Point the repo-rules hook at this Kasten, in place of one that points at another."""
+    entries = settings.setdefault("hooks", {}).setdefault("PreToolUse", [])
+    entries[:] = [entry for entry in entries
+                  if not any(REPO_RULES_HOOK in hook.get("command", "") for hook in entry.get("hooks", []))]
+    command = f'python3 "{kasten}/asf/claude/hooks/{REPO_RULES_HOOK}"'
+    entries.append({"matcher": REPO_RULES_TOOLS, "hooks": [{"type": "command", "command": command}]})
 
 
 def install_plugins(shared: dict) -> None:

@@ -7,7 +7,8 @@ These apply in every repository.
 A session often changes a repository other than the one it started in. That repository's
 `AGENTS.md` / `CLAUDE.md`, the documents they name as binding, and its `.claude/skills/` are not
 loaded then. Read them before the first change there and follow them as if the session had
-started in it — test-first and running the test suite before every commit included.
+started in it — test-first and running the test suite before every commit included. The
+`repo-rules` hook holds the first call there back until they are read, and names them.
 
 ## Git
 
@@ -30,6 +31,35 @@ started in it — test-first and running the test suite before every commit incl
   - *Notes, backlog items and docs* go into the shared checkout on the branch the repository
     names: stage exactly your own paths (`git add <path>…`), commit, and push right away, so
     the checkout holds none of your changes when you move on.
+
+- **Code reaches the default branch through a pull request**, which carries the evidence
+  package of the `Closed loop` contract in `asf/AGENTS.md`. A repository whose `AGENTS.md` names
+  another way — such as a fast-forward merge without one — goes that way.
+
+## Working with the author
+
+- **Principles**: KISS, DRY, YAGNI, SOLID, CI and TDD hold in every repository — the simplest
+  design that does the job, the test first, one source of truth, only what a current need asks
+  for, CI as the gate.
+- **Prior art first**: before designing a loop, a harness or a script, look at what the
+  installed plugins and known tools already do. Build only the gap, and say why the existing
+  one did not serve.
+- **Follow-up work goes into a backlog item** — the repository's `docs/backlog/`, or the
+  consuming repository's for one without a backlog — not into a GitHub issue.
+- **The author is the Product Owner** of every repository. When a request goes against an
+  item's scope, say so in one line, record the exception as a Scope Decision, and carry on.
+- **An item closes when the change works.** A criterion that waits weeks for monitoring is
+  struck; a regression becomes a new item.
+- **Name an item by its ID and its title**, read fresh from the item — the author does not
+  keep IDs in mind.
+- **Facts come from a source.** When coordinates, prices, dates or device details sit behind a
+  login, ask the author for them; a value that cannot be checked stays open and marked so.
+- **Ambiguous feedback gets one question**: when a verdict on a numbered list contradicts
+  itself, ask which item it means before acting on it.
+- **Text posted under the author's name** — pull request comments, reviews — is shown as a
+  draft first and posted after a go.
+- **Rules say what to do**: write an agent rule as the action to take; a prohibition, where
+  one is needed, comes second.
 
 ## Checks
 

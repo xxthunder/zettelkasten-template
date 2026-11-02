@@ -142,7 +142,7 @@ def test_setup_merges_the_shared_settings_and_keeps_the_machines_own(template, t
     assert s["permissions"]["deny"] == ["Bash(rm -rf /)"]
     assert s["enabledPlugins"]["xxthunder-dev-skills@xxthunder-agentic-skills"] is True
     assert "xxthunder-agentic-skills" in s["extraKnownMarketplaces"]
-    assert "hooks" not in s
+    assert s["hooks"] == {"PreToolUse": [repo_rules_hook(target)]}
     assert s["env"]["LOGBOOK_PATH"] == str(target)
     assert s["env"]["LEARNINGS_PATH"] == str(target)
     assert s["env"]["LOGBOOK_REMOTE"] == REMOTE
@@ -210,10 +210,25 @@ def test_the_shared_settings_declare_the_marketplace_of_every_shared_plugin(temp
         assert plugin.split("@")[1] in shared["extraKnownMarketplaces"], plugin
 
 
+UNUSED_PLUGINS = ("example-skills@anthropic-agent-skills", "document-skills@anthropic-agent-skills",
+                  "feature-dev@claude-plugins-official", "code-simplifier@claude-plugins-official",
+                  "claude-md-management@claude-plugins-official", "context7@claude-plugins-official",
+                  "code-review@claude-plugins-official")
+
+
+def test_setup_turns_off_the_plugins_the_template_switches_off(template, tmp_path, env, home):
+    (home / ".claude").mkdir()
+    (home / ".claude" / "settings.json").write_text(json.dumps(
+        {"enabledPlugins": {plugin: True for plugin in UNUSED_PLUGINS}}))
+    make(template, tmp_path, env)
+    assert all(settings(home)["enabledPlugins"][plugin] is False for plugin in UNUSED_PLUGINS)
+    assert not any(f"plugin install {plugin}" in claude_calls(tmp_path) for plugin in UNUSED_PLUGINS)
+
+
 def test_the_template_brings_no_ansible_lock(template):
     shared = shared_settings(template)
     assert "hooks" not in shared and "permissions" not in shared
-    assert not (template / "asf" / "claude" / "hooks").exists()
+    assert not (template / "asf" / "claude" / "hooks" / "deny-ansible.py").exists()
 
 
 def test_setup_adds_the_shared_marketplaces(template, tmp_path, env):
@@ -280,6 +295,28 @@ ANSIBLE_LOCK = {
 OWN_HOOK = {"matcher": "Bash", "hooks": [{"type": "command", "command": "my-own-check"}]}
 
 
+def repo_rules_hook(kasten: Path) -> dict:
+    return {"matcher": "Read|Edit|Write|NotebookEdit|Glob|Grep|Bash",
+            "hooks": [{"type": "command",
+                       "command": f'python3 "{kasten}/asf/claude/hooks/repo-rules.py"'}]}
+
+
+def test_setup_hooks_in_the_repo_rules_hook_of_the_kasten(template, tmp_path, env, home):
+    target = make(template, tmp_path, env)
+    assert settings(home)["hooks"]["PreToolUse"] == [repo_rules_hook(target)]
+    assert (target / "asf" / "claude" / "hooks" / "repo-rules.py").is_file()
+
+
+def test_setup_replaces_the_repo_rules_hook_of_another_kasten_and_keeps_the_rest(
+        template, tmp_path, env, home):
+    (home / ".claude").mkdir()
+    (home / ".claude" / "settings.json").write_text(json.dumps({
+        "hooks": {"PreToolUse": [repo_rules_hook(tmp_path / "old-kasten"), OWN_HOOK]},
+    }))
+    target = make(template, tmp_path, env)
+    assert settings(home)["hooks"]["PreToolUse"] == [OWN_HOOK, repo_rules_hook(target)]
+
+
 def test_setup_removes_the_ansible_lock_an_earlier_setup_made(template, tmp_path, env, home):
     hooks = home / ".claude" / "hooks"
     hooks.mkdir(parents=True)
@@ -289,10 +326,10 @@ def test_setup_removes_the_ansible_lock_an_earlier_setup_made(template, tmp_path
         "permissions": {"deny": ["Bash(ansible*)", "Bash(rm -rf /)", "Bash(molecule*)"]},
         "hooks": {"PreToolUse": [ANSIBLE_LOCK, OWN_HOOK]},
     }))
-    make(template, tmp_path, env)
+    target = make(template, tmp_path, env)
     s = settings(home)
     assert s["permissions"]["deny"] == ["Bash(rm -rf /)"]
-    assert s["hooks"] == {"PreToolUse": [OWN_HOOK]}
+    assert s["hooks"] == {"PreToolUse": [OWN_HOOK, repo_rules_hook(target)]}
     assert not (hooks / "deny-ansible.py").is_symlink()
     assert (hooks / "deny-ansible.py.bak-20261027161101").read_text() == "# my old hook\n"
 
@@ -303,10 +340,10 @@ def test_setup_leaves_no_empty_settings_behind_the_ansible_lock(template, tmp_pa
         "permissions": {"deny": ["Bash(ansible*)", "Bash(molecule*)"]},
         "hooks": {"PreToolUse": [ANSIBLE_LOCK]},
     }))
-    make(template, tmp_path, env)
+    target = make(template, tmp_path, env)
     s = settings(home)
     assert "permissions" not in s
-    assert "hooks" not in s
+    assert s["hooks"] == {"PreToolUse": [repo_rules_hook(target)]}
 
 
 def test_setup_keeps_a_hook_file_of_that_name_it_did_not_link(template, tmp_path, env, home):

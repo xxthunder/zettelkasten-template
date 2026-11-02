@@ -234,10 +234,6 @@ A table of all notes with date and a short description. New entries go on top.
 - **Auto-memory lives in `memory/`**: treat a memory like a note — after writing, changing
   or deleting one, stage exactly those paths plus `memory/MEMORY.md`, commit and push right
   away. Memories are English
-- **Linear history**: never merge one branch into another — no merge commits. Update a
-  branch by rebasing (`git pull --rebase`, `git rebase origin/develop`); a rebased branch
-  that is already pushed goes out with `git push --force-with-lease`, after telling the
-  author
 - Prefer asking questions over making statements
 - When suggesting links, explain *why* the connection matters
 - Keep your responses concise — this is a thinking tool, not a chat
