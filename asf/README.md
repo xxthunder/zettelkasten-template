@@ -60,6 +60,18 @@ Kasten goes into its own files in its root — its own `AGENTS.md` imports
   `.claude/skills/`
 - `seed/` — the files a new Kasten starts with; afterwards they are the Kasten's own
 
+## Behind a proxy
+
+`setup` copies `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY` and `NODE_EXTRA_CA_CERTS` from its own
+environment into the `env` block of `~/.claude/settings.json`, and removes those its
+environment no longer has. Claude Code then has the proxy also when it starts without a
+shell — as the Claude desktop app starts it in WSL. Whatever sets these variables for the
+machine's shells stays their only source; run `setup` again after it changed them.
+
+On a new machine, Claude Code started by the desktop app has no proxy until `setup` ran.
+Run the first `setup` from a Claude Code session started in a shell on that machine, not
+from the desktop app.
+
 ## Changing asf/
 
 Any Kasten can be the origin of a change to `asf/`: it is made and tried in the Kasten that

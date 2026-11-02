@@ -14,8 +14,10 @@
         instructions; the claude CLI adds the shared marketplaces and installs the
         shared plugins, naming any it could not install; ~/.claude/settings.json
         gets the shared plugins, marketplaces and the logbook, learnings and board
-        variables for this Kasten, and loses the Ansible hook and deny rules an
-        earlier setup put in, with the hook's link in ~/.claude/hooks/ — every
+        variables for this Kasten, takes the proxy variables from setup's own
+        environment — removing those the environment no longer has — and loses
+        the Ansible hook and deny rules an earlier setup put in, with the hook's
+        link in ~/.claude/hooks/ — every
         other setting stays as it is; the workflow's git settings go into the global config;
         ~/.zshrc sources asf/shell/asf.zsh; the process-inbox skill is linked into
         the Kasten's .claude/skills/. A file it replaces is kept as
@@ -176,7 +178,13 @@ def new(target: Path, remote: str | None) -> None:
 # --- setup -------------------------------------------------------------------
 
 
-def merge_settings(current: dict, shared: dict, kasten: Path, remote: str | None) -> dict:
+# The machine's proxy, copied from setup's environment so that Claude Code has it also when it
+# starts without a shell, as the desktop app starts it in WSL.
+PROXY_VARIABLES = ("HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "NODE_EXTRA_CA_CERTS")
+
+
+def merge_settings(current: dict, shared: dict, kasten: Path, remote: str | None,
+                   environ: dict[str, str]) -> dict:
     merged = json.loads(json.dumps(current))
     merged.setdefault("enabledPlugins", {}).update(shared.get("enabledPlugins", {}))
     merged.setdefault("extraKnownMarketplaces", {}).update(shared.get("extraKnownMarketplaces", {}))
@@ -186,6 +194,11 @@ def merge_settings(current: dict, shared: dict, kasten: Path, remote: str | None
         environment[f"{prefix}_PATH"] = str(kasten)
         if remote:
             environment[f"{prefix}_REMOTE"] = remote
+    for name in PROXY_VARIABLES:
+        if name in environ:
+            environment[name] = environ[name]
+        else:
+            environment.pop(name, None)
     return merged
 
 
@@ -258,7 +271,7 @@ def setup(kasten: Path) -> None:
     install_plugins(shared)
     settings_path = claude / "settings.json"
     current = json.loads(settings_path.read_text()) if settings_path.is_file() else {}
-    merged = merge_settings(current, shared, kasten, remote)
+    merged = merge_settings(current, shared, kasten, remote, dict(os.environ))
     if merged != current:
         write_if_changed(settings_path, json.dumps(merged, indent=2, ensure_ascii=False) + "\n")
 

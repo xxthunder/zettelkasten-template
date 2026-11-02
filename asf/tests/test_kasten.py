@@ -157,6 +157,44 @@ def test_setup_sets_no_remote_variables_without_an_origin(template, tmp_path, en
     assert "BOARD_REMOTE" not in settings(home)["env"]
 
 
+PROXY = {
+    "HTTPS_PROXY": "http://127.0.0.1:3128",
+    "HTTP_PROXY": "http://127.0.0.1:3128",
+    "NO_PROXY": "localhost,.example.com",
+    "NODE_EXTRA_CA_CERTS": "/etc/ssl/certs/ca-certificates.crt",
+}
+
+
+def test_setup_copies_the_proxy_from_its_environment_over_older_values(template, tmp_path, env, home):
+    (home / ".claude").mkdir()
+    (home / ".claude" / "settings.json").write_text(json.dumps({
+        "env": {"HTTPS_PROXY": "http://old.example.com:8080"},
+    }))
+    make(template, tmp_path, {**env, **PROXY})
+    s = settings(home)
+    assert {key: s["env"][key] for key in PROXY} == PROXY
+
+
+def test_setup_removes_the_proxy_its_environment_no_longer_has(template, tmp_path, env, home):
+    (home / ".claude").mkdir()
+    (home / ".claude" / "settings.json").write_text(json.dumps({
+        "env": {**PROXY, "MY_OWN": "kept"},
+    }))
+    make(template, tmp_path, env)
+    s = settings(home)
+    assert not set(PROXY) & set(s["env"])
+    assert s["env"]["MY_OWN"] == "kept"
+
+
+def test_setup_twice_with_a_proxy_changes_nothing(template, tmp_path, env, home):
+    proxied = {**env, **PROXY}
+    target = make(template, tmp_path, proxied)
+    before = (home / ".claude" / "settings.json").read_bytes()
+    result = kasten(target, "setup", cwd=target, env=proxied)
+    assert result.returncode == 0, result.stderr
+    assert (home / ".claude" / "settings.json").read_bytes() == before
+
+
 def shared_settings(template: Path) -> dict:
     return json.loads((template / "asf" / "claude" / "settings.json").read_text())
 
