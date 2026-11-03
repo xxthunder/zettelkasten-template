@@ -16,3 +16,12 @@ at `~/dev/<org>/<repo>` — look there before cloning.
 
 | Repo | Remote | IDs | What it is |
 |---|---|---|---|
+
+## Jira projects
+
+Work that a team keeps in Jira gets a board card by `<name> <KEY-123>`, where `<name>` is the
+first column here. The name links to the project; Site is the Jira base URL, Key the project
+key.
+
+| Jira project | Site | Key | What it is |
+|---|---|---|---|
