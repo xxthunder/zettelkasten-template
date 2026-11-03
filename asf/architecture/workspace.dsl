@@ -22,7 +22,7 @@ workspace "Agentic Software Forge" "The closed engineering loop, with the Kasten
                 board = component "Board" "engineering/board.md: Next and In Progress across all repositories." "Markdown"
                 logbook = component "Logbook" "engineering/log.md: started, note, done — one line per event." "Markdown"
                 generalRubric = component "General rubric" "asf/rubric.md: what a reviewer judges in every repository — prior art first, mechanical work is code, rules say what to do, simplicity, test first, the record stays true, nothing private leaves its place." "Markdown"
-                registry = component "Repository registry" "engineering/repos.md: repository name → remote, ID prefix." "Markdown"
+                registry = component "Repository registry" "engineering/repos.md: repository name → remote, ID prefix; a gate the author corrects." "Markdown"
             }
 
             session = container "Claude Code session" "The controller: works one item through the loop in the target repository's worktree." "Claude Code" "Agent"
@@ -32,7 +32,7 @@ workspace "Agentic Software Forge" "The closed engineering loop, with the Kasten
                 next = component "next" "Shows the board; puts and drops cards." "Skill"
                 logbookSkill = component "logbook" "Writes started, note and done lines." "Skill"
                 refinement = component "refinement" "Creates items through backlog.py new." "Skill"
-                loopDriver = component "Loop driver" "Reads the target repository's gate and rubric, hands the rubric to the reviewers, ends the loop on a green gate, writes the evidence package (XAS-055)." "Skill" "Planned"
+                loopDriver = component "Loop driver" "Finds the target repository's gate — named by it, corrected in the registry, or derived from its CI — and its rubric, hands the rubric to the reviewers, ends the loop on a green gate, writes the evidence package (XAS-055)." "Skill" "Planned"
                 backlogScript = component "backlog.py" "Every mechanical backlog step: new, set-status, toc, show, check." "Python"
                 storeScript = component "store" "Resolves a store, reads a contract, commits and pushes one file." "Shell"
             }
@@ -44,15 +44,16 @@ workspace "Agentic Software Forge" "The closed engineering loop, with the Kasten
 
         superpowers = softwareSystem "superpowers" "Third-party plugin: writing-plans, subagent-driven-development, finishing-a-development-branch, and the prompt templates for implementer and reviewers. Adopted, not rebuilt (ADR-0013 of xxthunder-agentic-skills)." "External"
 
-        target = softwareSystem "Target repository" "Any repository on the board. Supplies its own gate and rubric, in the form the Closed loop contract sets." "Repository" {
-            agentsMd = container "AGENTS.md" "The repository's rules; its section Closed loop names the gate, the rubric and where the gate runs." "Markdown"
+        target = softwareSystem "Target repository" "Any repository on the board, the author's or someone else's. Its gate is the one it names or the one its CI implies." "Repository" {
+            agentsMd = container "AGENTS.md" "The repository's rules; an optional section Closed loop names the gate, the rubric and where the gate runs." "Markdown"
             backlog = container "Backlog" "docs/backlog/: one file per item; the item is the design document of its change." "Markdown"
             worktree = container "Feature worktree" "A feature branch in its own worktree, one per item." "Git worktree"
-            gate = container "Gate" "scripts/gate: one executable that runs every deterministic check — tests, lint, Molecule, behavioural evals — and exits 0 only when all are green. The author and CI call it too." "Script"
-            rubric = container "Rubric" "docs/rubric.md: what the reviewers judge in this repository's changes — only what needs judgment." "Markdown" "Planned"
+            ci = container "CI definition" "pypeline.yaml, .github/workflows/, .gitea/workflows/ or a Jenkinsfile: the checks a pull request must pass." "YAML, Groovy"
+            gate = container "Gate" "The command that runs every deterministic check — tests, lint, Molecule, behavioural evals — and exits 0 only when all are green: the one the repository names, often scripts/gate, or the one derived from its CI." "Command"
+            rubric = container "Rubric" "docs/rubric.md, else CONTRIBUTING.md: what the reviewers judge in this repository's changes — only what needs judgment." "Markdown" "Planned"
         }
 
-        forge = softwareSystem "Forge" "GitHub or Gitea: the pull request carries the evidence package; CI runs the gate again." "External"
+        forge = softwareSystem "Forge" "GitHub, Gitea or Jenkins: the pull request carries the evidence package; CI runs the checks again, and is the gate where they cannot run locally." "External"
 
         # Context
         author -> asf "Pulls items, confirms evidence"
@@ -84,9 +85,12 @@ workspace "Agentic Software Forge" "The closed engineering loop, with the Kasten
         # The loop
         asf.devSkills.loopDriver -> asf.kasten.contracts "Reads the Closed loop contract"
         asf.devSkills.loopDriver -> target.agentsMd "Reads where the gate and the rubric are"
+        asf.devSkills.loopDriver -> asf.kasten.registry "Reads a gate correction"
+        asf.devSkills.loopDriver -> target.ci "Derives the gate from, when the repository names none"
         asf.devSkills.loopDriver -> asf.kasten.generalRubric "Hands it to the reviewers as global constraints"
         asf.devSkills.loopDriver -> target.rubric "Hands it to the reviewers as global constraints"
         asf.devSkills.loopDriver -> target.gate "Runs it; the loop ends only when it is green"
+        asf.devSkills.loopDriver -> forge "Waits for green CI checks, where the CI is the gate"
         asf.devSkills.loopDriver -> forge "Writes the evidence package into the pull request"
         asf.session -> asf.implementer "Dispatches, one task at a time"
         asf.session -> asf.taskReviewer "Dispatches after each task, with the rubric"
@@ -134,7 +138,7 @@ workspace "Agentic Software Forge" "The closed engineering loop, with the Kasten
             asf.taskReviewer -> target.rubric "Judges the diff against the repository's rubric"
             asf.session -> asf.implementer "Fix round, until approved (at most five)"
             asf.session -> asf.finalReviewer "Review the whole branch"
-            asf.session -> target.gate "Run scripts/gate; a red gate sends the work back into a fix round"
+            asf.session -> target.gate "Run the gate — or wait for the CI where it is the gate; a red gate sends the work back into a fix round"
             asf.session -> forge "Open the pull request with the evidence package"
             author -> forge "Confirms the evidence, merges"
             autoLayout lr

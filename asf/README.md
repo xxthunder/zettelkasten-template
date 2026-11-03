@@ -28,8 +28,8 @@ optional; the board works without it.
 
 Inside the worktree the work runs as a **closed loop**: an implementer subagent writes the
 test and the code for each task, a reviewer subagent judges the diff against the
-repository's rubric, and the loop ends only when the repository's gate — one script,
-`scripts/gate` — is green. The author confirms an evidence package in the pull request
+repository's rubric, and the loop ends only when the repository's gate is green — the
+gate it names, often `scripts/gate`, or else the one derived from its CI. The author confirms an evidence package in the pull request
 instead of reading the diff. The contract is `Closed loop` in [AGENTS.md](AGENTS.md); the
 architecture is a Structurizr workspace in
 [architecture/workspace.dsl](architecture/workspace.dsl).
