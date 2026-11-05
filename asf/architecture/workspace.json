@@ -1,0 +1,1429 @@
+{
+  "configuration" : { },
+  "description" : "The closed engineering loop, with the Kasten as its root.",
+  "documentation" : { },
+  "id" : 1,
+  "lastModifiedAgent" : "structurizr/diagrams/c487c64b-64bc-4d7b-9de1-d717f479d698",
+  "lastModifiedDate" : "2026-11-05T11:39:10Z",
+  "lastModifiedUser" : "2140484832",
+  "model" : {
+    "people" : [ {
+      "description" : "Ranks the work, pulls an item, confirms the evidence package, merges.",
+      "id" : "1",
+      "name" : "Author",
+      "properties" : {
+        "structurizr.dsl.identifier" : "author"
+      },
+      "relationships" : [ {
+        "description" : "Pulls items, confirms evidence",
+        "destinationId" : "2",
+        "id" : "30",
+        "sourceId" : "1",
+        "tags" : "Relationship"
+      }, {
+        "description" : "Reads the evidence package, merges",
+        "destinationId" : "29",
+        "id" : "31",
+        "sourceId" : "1",
+        "tags" : "Relationship"
+      }, {
+        "description" : "Ranks the cards",
+        "destinationId" : "5",
+        "id" : "35",
+        "sourceId" : "1",
+        "tags" : "Relationship",
+        "technology" : "next put"
+      }, {
+        "description" : "Ranks the cards",
+        "destinationId" : "3",
+        "id" : "36",
+        "linkedRelationshipId" : "35",
+        "sourceId" : "1",
+        "technology" : "next put"
+      }, {
+        "description" : "Pulls an item, answers questions",
+        "destinationId" : "9",
+        "id" : "37",
+        "sourceId" : "1",
+        "tags" : "Relationship",
+        "technology" : "chat"
+      } ],
+      "tags" : "Element,Person"
+    } ],
+    "softwareSystems" : [ {
+      "containers" : [ {
+        "components" : [ {
+          "description" : "asf/AGENTS.md: Board, Logbook, Learnings and Closed loop — gate, rubric and the sections of the evidence package.",
+          "documentation" : { },
+          "id" : "4",
+          "name" : "Contracts",
+          "properties" : {
+            "structurizr.dsl.identifier" : "asf.kasten.contracts"
+          },
+          "tags" : "Element,Component",
+          "technology" : "Markdown"
+        }, {
+          "description" : "engineering/board.md: Next and In Progress across all repositories.",
+          "documentation" : { },
+          "id" : "5",
+          "name" : "Board",
+          "properties" : {
+            "structurizr.dsl.identifier" : "asf.kasten.board"
+          },
+          "tags" : "Element,Component",
+          "technology" : "Markdown"
+        }, {
+          "description" : "engineering/log.md: started, note, done — one line per event.",
+          "documentation" : { },
+          "id" : "6",
+          "name" : "Logbook",
+          "properties" : {
+            "structurizr.dsl.identifier" : "asf.kasten.logbook"
+          },
+          "tags" : "Element,Component",
+          "technology" : "Markdown"
+        }, {
+          "description" : "asf/rubric.md: what a reviewer judges in every repository — prior art first, mechanical work is code, rules say what to do, simplicity, test first, the record stays true, nothing private leaves its place.",
+          "documentation" : { },
+          "id" : "7",
+          "name" : "General rubric",
+          "properties" : {
+            "structurizr.dsl.identifier" : "asf.kasten.generalRubric"
+          },
+          "tags" : "Element,Component",
+          "technology" : "Markdown"
+        }, {
+          "description" : "engineering/repos.md: repository name → remote, ID prefix; a gate the author corrects.",
+          "documentation" : { },
+          "id" : "8",
+          "name" : "Repository registry",
+          "properties" : {
+            "structurizr.dsl.identifier" : "asf.kasten.registry"
+          },
+          "tags" : "Element,Component",
+          "technology" : "Markdown"
+        } ],
+        "description" : "Knowledge repository and root of the work: contracts, board, log, learnings.",
+        "documentation" : { },
+        "id" : "3",
+        "name" : "Kasten",
+        "properties" : {
+          "structurizr.dsl.identifier" : "asf.kasten"
+        },
+        "tags" : "Element,Container,Repository",
+        "technology" : "Git repository"
+      }, {
+        "description" : "The controller: works one item through the loop in the target repository's worktree.",
+        "documentation" : { },
+        "id" : "9",
+        "name" : "Claude Code session",
+        "properties" : {
+          "structurizr.dsl.identifier" : "asf.session"
+        },
+        "relationships" : [ {
+          "description" : "Invokes skills",
+          "destinationId" : "10",
+          "id" : "38",
+          "sourceId" : "9",
+          "tags" : "Relationship"
+        }, {
+          "description" : "Plans the item, runs subagent-driven-development",
+          "destinationId" : "21",
+          "id" : "39",
+          "sourceId" : "9",
+          "tags" : "Relationship"
+        }, {
+          "description" : "Dispatches, one task at a time",
+          "destinationId" : "18",
+          "id" : "82",
+          "sourceId" : "9",
+          "tags" : "Relationship"
+        }, {
+          "description" : "Dispatches after each task, with the rubric",
+          "destinationId" : "19",
+          "id" : "83",
+          "sourceId" : "9",
+          "tags" : "Relationship"
+        }, {
+          "description" : "Dispatches once, for the whole branch",
+          "destinationId" : "20",
+          "id" : "84",
+          "sourceId" : "9",
+          "tags" : "Relationship"
+        }, {
+          "description" : "Runs before the loop ends",
+          "destinationId" : "27",
+          "id" : "96",
+          "sourceId" : "9",
+          "tags" : "Relationship"
+        }, {
+          "description" : "Runs before the loop ends",
+          "destinationId" : "22",
+          "id" : "97",
+          "linkedRelationshipId" : "96",
+          "sourceId" : "9"
+        }, {
+          "description" : "Opens the pull request",
+          "destinationId" : "29",
+          "id" : "98",
+          "sourceId" : "9",
+          "tags" : "Relationship"
+        } ],
+        "tags" : "Element,Container,Agent",
+        "technology" : "Claude Code"
+      }, {
+        "components" : [ {
+          "description" : "Pulls, ticks and closes an item; moves its card.",
+          "documentation" : { },
+          "id" : "11",
+          "name" : "backlog-ops",
+          "properties" : {
+            "structurizr.dsl.identifier" : "asf.devSkills.backlogOps"
+          },
+          "relationships" : [ {
+            "description" : "Sets the status",
+            "destinationId" : "16",
+            "id" : "40",
+            "sourceId" : "11",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Moves the card",
+            "destinationId" : "17",
+            "id" : "47",
+            "sourceId" : "11",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Skill"
+        }, {
+          "description" : "Shows the board; puts and drops cards.",
+          "documentation" : { },
+          "id" : "12",
+          "name" : "next",
+          "properties" : {
+            "structurizr.dsl.identifier" : "asf.devSkills.next"
+          },
+          "relationships" : [ {
+            "description" : "Puts and drops cards",
+            "destinationId" : "17",
+            "id" : "48",
+            "sourceId" : "12",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Resolves a repository",
+            "destinationId" : "8",
+            "id" : "58",
+            "sourceId" : "12",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Resolves a repository",
+            "destinationId" : "3",
+            "id" : "59",
+            "linkedRelationshipId" : "58",
+            "sourceId" : "12"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Skill"
+        }, {
+          "description" : "Writes started, note and done lines.",
+          "documentation" : { },
+          "id" : "13",
+          "name" : "logbook",
+          "properties" : {
+            "structurizr.dsl.identifier" : "asf.devSkills.logbookSkill"
+          },
+          "relationships" : [ {
+            "description" : "Writes a log line",
+            "destinationId" : "17",
+            "id" : "49",
+            "sourceId" : "13",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Skill"
+        }, {
+          "description" : "Creates items through backlog.py new.",
+          "documentation" : { },
+          "id" : "14",
+          "name" : "refinement",
+          "properties" : {
+            "structurizr.dsl.identifier" : "asf.devSkills.refinement"
+          },
+          "relationships" : [ {
+            "description" : "Creates the item",
+            "destinationId" : "16",
+            "id" : "41",
+            "sourceId" : "14",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Skill"
+        }, {
+          "description" : "Finds the target repository's gate — named by it, corrected in the registry, or derived from its CI — and its rubric, hands the rubric to the reviewers, ends the loop on a green gate, writes the evidence package (XAS-055).",
+          "documentation" : { },
+          "id" : "15",
+          "name" : "Loop driver",
+          "properties" : {
+            "structurizr.dsl.identifier" : "asf.devSkills.loopDriver"
+          },
+          "relationships" : [ {
+            "description" : "Reads the Closed loop contract",
+            "destinationId" : "4",
+            "id" : "61",
+            "sourceId" : "15",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Reads the Closed loop contract",
+            "destinationId" : "3",
+            "id" : "62",
+            "linkedRelationshipId" : "61",
+            "sourceId" : "15"
+          }, {
+            "description" : "Reads where the gate and the rubric are",
+            "destinationId" : "23",
+            "id" : "63",
+            "sourceId" : "15",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Reads where the gate and the rubric are",
+            "destinationId" : "22",
+            "id" : "64",
+            "linkedRelationshipId" : "63",
+            "sourceId" : "15"
+          }, {
+            "description" : "Reads a gate correction",
+            "destinationId" : "8",
+            "id" : "67",
+            "sourceId" : "15",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Derives the gate from, when the repository names none",
+            "destinationId" : "26",
+            "id" : "68",
+            "sourceId" : "15",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Hands it to the reviewers as global constraints",
+            "destinationId" : "7",
+            "id" : "71",
+            "sourceId" : "15",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Hands it to the reviewers as global constraints",
+            "destinationId" : "28",
+            "id" : "73",
+            "sourceId" : "15",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Runs it; the loop ends only when it is green",
+            "destinationId" : "27",
+            "id" : "76",
+            "sourceId" : "15",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Waits for green CI checks, where the CI is the gate",
+            "destinationId" : "29",
+            "id" : "79",
+            "sourceId" : "15",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Writes the evidence package into the pull request",
+            "destinationId" : "29",
+            "id" : "81",
+            "sourceId" : "15",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component,Planned",
+          "technology" : "Skill"
+        }, {
+          "description" : "Every mechanical backlog step: new, set-status, toc, show, check.",
+          "documentation" : { },
+          "id" : "16",
+          "name" : "backlog.py",
+          "properties" : {
+            "structurizr.dsl.identifier" : "asf.devSkills.backlogScript"
+          },
+          "relationships" : [ {
+            "description" : "Reads and writes items",
+            "destinationId" : "24",
+            "id" : "42",
+            "sourceId" : "16",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Reads and writes items",
+            "destinationId" : "22",
+            "id" : "43",
+            "linkedRelationshipId" : "42",
+            "sourceId" : "16"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Python"
+        }, {
+          "description" : "Resolves a store, reads a contract, commits and pushes one file.",
+          "documentation" : { },
+          "id" : "17",
+          "name" : "store",
+          "properties" : {
+            "structurizr.dsl.identifier" : "asf.devSkills.storeScript"
+          },
+          "relationships" : [ {
+            "description" : "Reads a contract",
+            "destinationId" : "4",
+            "id" : "50",
+            "sourceId" : "17",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Reads a contract",
+            "destinationId" : "3",
+            "id" : "51",
+            "linkedRelationshipId" : "50",
+            "sourceId" : "17"
+          }, {
+            "description" : "Commits the board",
+            "destinationId" : "5",
+            "id" : "54",
+            "sourceId" : "17",
+            "tags" : "Relationship"
+          }, {
+            "description" : "Commits the log",
+            "destinationId" : "6",
+            "id" : "56",
+            "sourceId" : "17",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Shell"
+        } ],
+        "description" : "The plugin that works the Kasten structure and the backlogs.",
+        "documentation" : { },
+        "id" : "10",
+        "name" : "xxthunder-dev-skills",
+        "properties" : {
+          "structurizr.dsl.identifier" : "asf.devSkills"
+        },
+        "relationships" : [ {
+          "description" : "Reads and writes items",
+          "destinationId" : "24",
+          "id" : "44",
+          "linkedRelationshipId" : "42",
+          "sourceId" : "10"
+        }, {
+          "description" : "Reads and writes items",
+          "destinationId" : "22",
+          "id" : "45",
+          "linkedRelationshipId" : "42",
+          "sourceId" : "10"
+        }, {
+          "description" : "Reads a contract",
+          "destinationId" : "4",
+          "id" : "52",
+          "linkedRelationshipId" : "50",
+          "sourceId" : "10"
+        }, {
+          "description" : "Reads a contract",
+          "destinationId" : "3",
+          "id" : "53",
+          "linkedRelationshipId" : "50",
+          "sourceId" : "10"
+        }, {
+          "description" : "Commits the board",
+          "destinationId" : "5",
+          "id" : "55",
+          "linkedRelationshipId" : "54",
+          "sourceId" : "10"
+        }, {
+          "description" : "Commits the log",
+          "destinationId" : "6",
+          "id" : "57",
+          "linkedRelationshipId" : "56",
+          "sourceId" : "10"
+        }, {
+          "description" : "Resolves a repository",
+          "destinationId" : "8",
+          "id" : "60",
+          "linkedRelationshipId" : "58",
+          "sourceId" : "10"
+        }, {
+          "description" : "Reads where the gate and the rubric are",
+          "destinationId" : "23",
+          "id" : "65",
+          "linkedRelationshipId" : "63",
+          "sourceId" : "10"
+        }, {
+          "description" : "Derives the gate from, when the repository names none",
+          "destinationId" : "26",
+          "id" : "69",
+          "linkedRelationshipId" : "68",
+          "sourceId" : "10"
+        }, {
+          "description" : "Hands it to the reviewers as global constraints",
+          "destinationId" : "7",
+          "id" : "72",
+          "linkedRelationshipId" : "71",
+          "sourceId" : "10"
+        }, {
+          "description" : "Hands it to the reviewers as global constraints",
+          "destinationId" : "28",
+          "id" : "74",
+          "linkedRelationshipId" : "73",
+          "sourceId" : "10"
+        }, {
+          "description" : "Runs it; the loop ends only when it is green",
+          "destinationId" : "27",
+          "id" : "77",
+          "linkedRelationshipId" : "76",
+          "sourceId" : "10"
+        }, {
+          "description" : "Waits for green CI checks, where the CI is the gate",
+          "destinationId" : "29",
+          "id" : "80",
+          "linkedRelationshipId" : "79",
+          "sourceId" : "10"
+        } ],
+        "tags" : "Element,Container,Plugin",
+        "technology" : "Claude Code plugin"
+      }, {
+        "description" : "Writes the test, then the code, for one task; commits.",
+        "documentation" : { },
+        "id" : "18",
+        "name" : "Implementer subagent",
+        "properties" : {
+          "structurizr.dsl.identifier" : "asf.implementer"
+        },
+        "relationships" : [ {
+          "description" : "Commits, test first",
+          "destinationId" : "25",
+          "id" : "85",
+          "sourceId" : "18",
+          "tags" : "Relationship"
+        }, {
+          "description" : "Commits, test first",
+          "destinationId" : "22",
+          "id" : "86",
+          "linkedRelationshipId" : "85",
+          "sourceId" : "18"
+        }, {
+          "description" : "Runs the tests of its task",
+          "destinationId" : "27",
+          "id" : "88",
+          "sourceId" : "18",
+          "tags" : "Relationship"
+        } ],
+        "tags" : "Element,Container,Agent",
+        "technology" : "general-purpose subagent, superpowers prompt"
+      }, {
+        "description" : "Reads one task's diff against the task and the target repository's rubric; reports findings.",
+        "documentation" : { },
+        "id" : "19",
+        "name" : "Task reviewer subagent",
+        "properties" : {
+          "structurizr.dsl.identifier" : "asf.taskReviewer"
+        },
+        "relationships" : [ {
+          "description" : "Judges the diff against",
+          "destinationId" : "28",
+          "id" : "89",
+          "sourceId" : "19",
+          "tags" : "Relationship"
+        }, {
+          "description" : "Judges the diff against",
+          "destinationId" : "22",
+          "id" : "90",
+          "linkedRelationshipId" : "89",
+          "sourceId" : "19"
+        }, {
+          "description" : "Judges the diff against",
+          "destinationId" : "7",
+          "id" : "91",
+          "sourceId" : "19",
+          "tags" : "Relationship"
+        }, {
+          "description" : "Judges the diff against",
+          "destinationId" : "3",
+          "id" : "92",
+          "linkedRelationshipId" : "91",
+          "sourceId" : "19"
+        }, {
+          "description" : "Reads the diff",
+          "destinationId" : "25",
+          "id" : "93",
+          "sourceId" : "19",
+          "tags" : "Relationship"
+        } ],
+        "tags" : "Element,Container,Agent",
+        "technology" : "general-purpose subagent, superpowers prompt"
+      }, {
+        "description" : "Reads the whole branch once all tasks are done.",
+        "documentation" : { },
+        "id" : "20",
+        "name" : "Final reviewer subagent",
+        "properties" : {
+          "structurizr.dsl.identifier" : "asf.finalReviewer"
+        },
+        "relationships" : [ {
+          "description" : "Reads the branch",
+          "destinationId" : "25",
+          "id" : "94",
+          "sourceId" : "20",
+          "tags" : "Relationship"
+        }, {
+          "description" : "Reads the branch",
+          "destinationId" : "22",
+          "id" : "95",
+          "linkedRelationshipId" : "94",
+          "sourceId" : "20"
+        } ],
+        "tags" : "Element,Container,Agent",
+        "technology" : "general-purpose subagent, superpowers prompt"
+      } ],
+      "description" : "The author's way of building software with AI agents: the same workflow on every machine.",
+      "documentation" : { },
+      "id" : "2",
+      "name" : "Agentic Software Forge",
+      "properties" : {
+        "structurizr.dsl.identifier" : "asf"
+      },
+      "relationships" : [ {
+        "description" : "Changes, through a feature branch",
+        "destinationId" : "22",
+        "id" : "32",
+        "sourceId" : "2",
+        "tags" : "Relationship"
+      }, {
+        "description" : "Runs the loop with",
+        "destinationId" : "21",
+        "id" : "33",
+        "sourceId" : "2",
+        "tags" : "Relationship"
+      }, {
+        "description" : "Opens the pull request with the evidence package",
+        "destinationId" : "29",
+        "id" : "34",
+        "sourceId" : "2",
+        "tags" : "Relationship"
+      }, {
+        "description" : "Reads and writes items",
+        "destinationId" : "24",
+        "id" : "46",
+        "linkedRelationshipId" : "42",
+        "sourceId" : "2"
+      }, {
+        "description" : "Reads where the gate and the rubric are",
+        "destinationId" : "23",
+        "id" : "66",
+        "linkedRelationshipId" : "63",
+        "sourceId" : "2"
+      }, {
+        "description" : "Derives the gate from, when the repository names none",
+        "destinationId" : "26",
+        "id" : "70",
+        "linkedRelationshipId" : "68",
+        "sourceId" : "2"
+      }, {
+        "description" : "Hands it to the reviewers as global constraints",
+        "destinationId" : "28",
+        "id" : "75",
+        "linkedRelationshipId" : "73",
+        "sourceId" : "2"
+      }, {
+        "description" : "Runs it; the loop ends only when it is green",
+        "destinationId" : "27",
+        "id" : "78",
+        "linkedRelationshipId" : "76",
+        "sourceId" : "2"
+      }, {
+        "description" : "Commits, test first",
+        "destinationId" : "25",
+        "id" : "87",
+        "linkedRelationshipId" : "85",
+        "sourceId" : "2"
+      } ],
+      "tags" : "Element,Software System"
+    }, {
+      "description" : "Third-party plugin: writing-plans, subagent-driven-development, finishing-a-development-branch, and the prompt templates for implementer and reviewers. Adopted, not rebuilt (ADR-0013 of xxthunder-agentic-skills).",
+      "documentation" : { },
+      "id" : "21",
+      "name" : "superpowers",
+      "properties" : {
+        "structurizr.dsl.identifier" : "superpowers"
+      },
+      "tags" : "Element,Software System,External"
+    }, {
+      "containers" : [ {
+        "description" : "The repository's rules; an optional section Closed loop names the gate, the rubric and where the gate runs.",
+        "documentation" : { },
+        "id" : "23",
+        "name" : "AGENTS.md",
+        "properties" : {
+          "structurizr.dsl.identifier" : "target.agentsMd"
+        },
+        "tags" : "Element,Container",
+        "technology" : "Markdown"
+      }, {
+        "description" : "docs/backlog/: one file per item; the item is the design document of its change.",
+        "documentation" : { },
+        "id" : "24",
+        "name" : "Backlog",
+        "properties" : {
+          "structurizr.dsl.identifier" : "target.backlog"
+        },
+        "tags" : "Element,Container",
+        "technology" : "Markdown"
+      }, {
+        "description" : "A feature branch in its own worktree, one per item.",
+        "documentation" : { },
+        "id" : "25",
+        "name" : "Feature worktree",
+        "properties" : {
+          "structurizr.dsl.identifier" : "target.worktree"
+        },
+        "relationships" : [ {
+          "description" : "Pushed to",
+          "destinationId" : "29",
+          "id" : "99",
+          "sourceId" : "25",
+          "tags" : "Relationship"
+        } ],
+        "tags" : "Element,Container",
+        "technology" : "Git worktree"
+      }, {
+        "description" : "pypeline.yaml, .github/workflows/, .gitea/workflows/ or a Jenkinsfile: the checks a pull request must pass.",
+        "documentation" : { },
+        "id" : "26",
+        "name" : "CI definition",
+        "properties" : {
+          "structurizr.dsl.identifier" : "target.ci"
+        },
+        "tags" : "Element,Container",
+        "technology" : "YAML, Groovy"
+      }, {
+        "description" : "The command that runs every deterministic check — tests, lint, Molecule, behavioural evals — and exits 0 only when all are green: the one the repository names, often scripts/gate, or the one derived from its CI.",
+        "documentation" : { },
+        "id" : "27",
+        "name" : "Gate",
+        "properties" : {
+          "structurizr.dsl.identifier" : "target.gate"
+        },
+        "tags" : "Element,Container",
+        "technology" : "Command"
+      }, {
+        "description" : "docs/rubric.md, else CONTRIBUTING.md: what the reviewers judge in this repository's changes — only what needs judgment.",
+        "documentation" : { },
+        "id" : "28",
+        "name" : "Rubric",
+        "properties" : {
+          "structurizr.dsl.identifier" : "target.rubric"
+        },
+        "tags" : "Element,Container,Planned",
+        "technology" : "Markdown"
+      } ],
+      "description" : "Any repository on the board, the author's or someone else's. Its gate is the one it names or the one its CI implies.",
+      "documentation" : { },
+      "id" : "22",
+      "name" : "Target repository",
+      "properties" : {
+        "structurizr.dsl.identifier" : "target"
+      },
+      "relationships" : [ {
+        "description" : "Pushed to",
+        "destinationId" : "29",
+        "id" : "100",
+        "linkedRelationshipId" : "99",
+        "sourceId" : "22"
+      } ],
+      "tags" : "Element,Software System,Repository"
+    }, {
+      "description" : "GitHub, Gitea or Jenkins: the pull request carries the evidence package; CI runs the checks again, and is the gate where they cannot run locally.",
+      "documentation" : { },
+      "id" : "29",
+      "name" : "Forge",
+      "properties" : {
+        "structurizr.dsl.identifier" : "forge"
+      },
+      "tags" : "Element,Software System,External"
+    } ]
+  },
+  "name" : "Agentic Software Forge",
+  "properties" : {
+    "structurizr.inspection.info" : "0",
+    "structurizr.inspection.ignore" : "0",
+    "structurizr.inspection.error" : "80",
+    "structurizr.inspection.warning" : "0",
+    "structurizr.dsl" : "LyoKICogVGhlIEFnZW50aWMgU29mdHdhcmUgRm9yZ2UgKEFTRik6IGhvdyBvbmUgYmFja2xvZyBpdGVtIHJ1bnMgdGhyb3VnaCB0aGUgY2xvc2VkIGxvb3AsCiAqIGZyb20gaXRzIGNhcmQgb24gdGhlIGJvYXJkIHRvIGFuIGV2aWRlbmNlIHBhY2thZ2UgdGhlIGF1dGhvciBjb25maXJtcy4KICoKICogR2VuZXJpYyBvbiBwdXJwb3NlOiB0aGlzIGZpbGUgYmVsb25ncyB0byB0aGUgdGVtcGxhdGUsIHNvIGl0IG5hbWVzIHJvbGVzCiAqICgidGFyZ2V0IHJlcG9zaXRvcnkiKSwgbm90IG9uZSBLYXN0ZW4ncyByZXBvc2l0b3JpZXMuIEVsZW1lbnRzIHRhZ2dlZCAiUGxhbm5lZCIKICogZG8gbm90IGV4aXN0IHlldDsgdGhlIGJhY2tsb2cgaXRlbSB0aGF0IGJ1aWxkcyB0aGVtIGlzIG5hbWVkIGluIHRoZWlyIGRlc2NyaXB0aW9uLgogKgogKiBWYWxpZGF0ZWQgYnkgYXNmL3NjcmlwdHMvbGludC5zaC4gUmVuZGVyIGl0IHdpdGggU3RydWN0dXJpenIsIGUuZy4KICogICBkb2NrZXIgcnVuIC0tcm0gLXAgODA4MDo4MDgwIC12ICIkUFdEL2FzZi9hcmNoaXRlY3R1cmU6L3Vzci9sb2NhbC9zdHJ1Y3R1cml6ciIgc3RydWN0dXJpenIvc3RydWN0dXJpenIgbG9jYWwKICovCndvcmtzcGFjZSAiQWdlbnRpYyBTb2Z0d2FyZSBGb3JnZSIgIlRoZSBjbG9zZWQgZW5naW5lZXJpbmcgbG9vcCwgd2l0aCB0aGUgS2FzdGVuIGFzIGl0cyByb290LiIgewoKICAgICFpZGVudGlmaWVycyBoaWVyYXJjaGljYWwKCiAgICBtb2RlbCB7CiAgICAgICAgYXV0aG9yID0gcGVyc29uICJBdXRob3IiICJSYW5rcyB0aGUgd29yaywgcHVsbHMgYW4gaXRlbSwgY29uZmlybXMgdGhlIGV2aWRlbmNlIHBhY2thZ2UsIG1lcmdlcy4iCgogICAgICAgIGFzZiA9IHNvZnR3YXJlU3lzdGVtICJBZ2VudGljIFNvZnR3YXJlIEZvcmdlIiAiVGhlIGF1dGhvcidzIHdheSBvZiBidWlsZGluZyBzb2Z0d2FyZSB3aXRoIEFJIGFnZW50czogdGhlIHNhbWUgd29ya2Zsb3cgb24gZXZlcnkgbWFjaGluZS4iIHsKICAgICAgICAgICAga2FzdGVuID0gY29udGFpbmVyICJLYXN0ZW4iICJLbm93bGVkZ2UgcmVwb3NpdG9yeSBhbmQgcm9vdCBvZiB0aGUgd29yazogY29udHJhY3RzLCBib2FyZCwgbG9nLCBsZWFybmluZ3MuIiAiR2l0IHJlcG9zaXRvcnkiICJSZXBvc2l0b3J5IiB7CiAgICAgICAgICAgICAgICBjb250cmFjdHMgPSBjb21wb25lbnQgIkNvbnRyYWN0cyIgImFzZi9BR0VOVFMubWQ6IEJvYXJkLCBMb2dib29rLCBMZWFybmluZ3MgYW5kIENsb3NlZCBsb29wIOKAlCBnYXRlLCBydWJyaWMgYW5kIHRoZSBzZWN0aW9ucyBvZiB0aGUgZXZpZGVuY2UgcGFja2FnZS4iICJNYXJrZG93biIKICAgICAgICAgICAgICAgIGJvYXJkID0gY29tcG9uZW50ICJCb2FyZCIgImVuZ2luZWVyaW5nL2JvYXJkLm1kOiBOZXh0IGFuZCBJbiBQcm9ncmVzcyBhY3Jvc3MgYWxsIHJlcG9zaXRvcmllcy4iICJNYXJrZG93biIKICAgICAgICAgICAgICAgIGxvZ2Jvb2sgPSBjb21wb25lbnQgIkxvZ2Jvb2siICJlbmdpbmVlcmluZy9sb2cubWQ6IHN0YXJ0ZWQsIG5vdGUsIGRvbmUg4oCUIG9uZSBsaW5lIHBlciBldmVudC4iICJNYXJrZG93biIKICAgICAgICAgICAgICAgIGdlbmVyYWxSdWJyaWMgPSBjb21wb25lbnQgIkdlbmVyYWwgcnVicmljIiAiYXNmL3J1YnJpYy5tZDogd2hhdCBhIHJldmlld2VyIGp1ZGdlcyBpbiBldmVyeSByZXBvc2l0b3J5IOKAlCBwcmlvciBhcnQgZmlyc3QsIG1lY2hhbmljYWwgd29yayBpcyBjb2RlLCBydWxlcyBzYXkgd2hhdCB0byBkbywgc2ltcGxpY2l0eSwgdGVzdCBmaXJzdCwgdGhlIHJlY29yZCBzdGF5cyB0cnVlLCBub3RoaW5nIHByaXZhdGUgbGVhdmVzIGl0cyBwbGFjZS4iICJNYXJrZG93biIKICAgICAgICAgICAgICAgIHJlZ2lzdHJ5ID0gY29tcG9uZW50ICJSZXBvc2l0b3J5IHJlZ2lzdHJ5IiAiZW5naW5lZXJpbmcvcmVwb3MubWQ6IHJlcG9zaXRvcnkgbmFtZSDihpIgcmVtb3RlLCBJRCBwcmVmaXg7IGEgZ2F0ZSB0aGUgYXV0aG9yIGNvcnJlY3RzLiIgIk1hcmtkb3duIgogICAgICAgICAgICB9CgogICAgICAgICAgICBzZXNzaW9uID0gY29udGFpbmVyICJDbGF1ZGUgQ29kZSBzZXNzaW9uIiAiVGhlIGNvbnRyb2xsZXI6IHdvcmtzIG9uZSBpdGVtIHRocm91Z2ggdGhlIGxvb3AgaW4gdGhlIHRhcmdldCByZXBvc2l0b3J5J3Mgd29ya3RyZWUuIiAiQ2xhdWRlIENvZGUiICJBZ2VudCIKCiAgICAgICAgICAgIGRldlNraWxscyA9IGNvbnRhaW5lciAieHh0aHVuZGVyLWRldi1za2lsbHMiICJUaGUgcGx1Z2luIHRoYXQgd29ya3MgdGhlIEthc3RlbiBzdHJ1Y3R1cmUgYW5kIHRoZSBiYWNrbG9ncy4iICJDbGF1ZGUgQ29kZSBwbHVnaW4iICJQbHVnaW4iIHsKICAgICAgICAgICAgICAgIGJhY2tsb2dPcHMgPSBjb21wb25lbnQgImJhY2tsb2ctb3BzIiAiUHVsbHMsIHRpY2tzIGFuZCBjbG9zZXMgYW4gaXRlbTsgbW92ZXMgaXRzIGNhcmQuIiAiU2tpbGwiCiAgICAgICAgICAgICAgICBuZXh0ID0gY29tcG9uZW50ICJuZXh0IiAiU2hvd3MgdGhlIGJvYXJkOyBwdXRzIGFuZCBkcm9wcyBjYXJkcy4iICJTa2lsbCIKICAgICAgICAgICAgICAgIGxvZ2Jvb2tTa2lsbCA9IGNvbXBvbmVudCAibG9nYm9vayIgIldyaXRlcyBzdGFydGVkLCBub3RlIGFuZCBkb25lIGxpbmVzLiIgIlNraWxsIgogICAgICAgICAgICAgICAgcmVmaW5lbWVudCA9IGNvbXBvbmVudCAicmVmaW5lbWVudCIgIkNyZWF0ZXMgaXRlbXMgdGhyb3VnaCBiYWNrbG9nLnB5IG5ldy4iICJTa2lsbCIKICAgICAgICAgICAgICAgIGxvb3BEcml2ZXIgPSBjb21wb25lbnQgIkxvb3AgZHJpdmVyIiAiRmluZHMgdGhlIHRhcmdldCByZXBvc2l0b3J5J3MgZ2F0ZSDigJQgbmFtZWQgYnkgaXQsIGNvcnJlY3RlZCBpbiB0aGUgcmVnaXN0cnksIG9yIGRlcml2ZWQgZnJvbSBpdHMgQ0kg4oCUIGFuZCBpdHMgcnVicmljLCBoYW5kcyB0aGUgcnVicmljIHRvIHRoZSByZXZpZXdlcnMsIGVuZHMgdGhlIGxvb3Agb24gYSBncmVlbiBnYXRlLCB3cml0ZXMgdGhlIGV2aWRlbmNlIHBhY2thZ2UgKFhBUy0wNTUpLiIgIlNraWxsIiAiUGxhbm5lZCIKICAgICAgICAgICAgICAgIGJhY2tsb2dTY3JpcHQgPSBjb21wb25lbnQgImJhY2tsb2cucHkiICJFdmVyeSBtZWNoYW5pY2FsIGJhY2tsb2cgc3RlcDogbmV3LCBzZXQtc3RhdHVzLCB0b2MsIHNob3csIGNoZWNrLiIgIlB5dGhvbiIKICAgICAgICAgICAgICAgIHN0b3JlU2NyaXB0ID0gY29tcG9uZW50ICJzdG9yZSIgIlJlc29sdmVzIGEgc3RvcmUsIHJlYWRzIGEgY29udHJhY3QsIGNvbW1pdHMgYW5kIHB1c2hlcyBvbmUgZmlsZS4iICJTaGVsbCIKICAgICAgICAgICAgfQoKICAgICAgICAgICAgaW1wbGVtZW50ZXIgPSBjb250YWluZXIgIkltcGxlbWVudGVyIHN1YmFnZW50IiAiV3JpdGVzIHRoZSB0ZXN0LCB0aGVuIHRoZSBjb2RlLCBmb3Igb25lIHRhc2s7IGNvbW1pdHMuIiAiZ2VuZXJhbC1wdXJwb3NlIHN1YmFnZW50LCBzdXBlcnBvd2VycyBwcm9tcHQiICJBZ2VudCIKICAgICAgICAgICAgdGFza1Jldmlld2VyID0gY29udGFpbmVyICJUYXNrIHJldmlld2VyIHN1YmFnZW50IiAiUmVhZHMgb25lIHRhc2sncyBkaWZmIGFnYWluc3QgdGhlIHRhc2sgYW5kIHRoZSB0YXJnZXQgcmVwb3NpdG9yeSdzIHJ1YnJpYzsgcmVwb3J0cyBmaW5kaW5ncy4iICJnZW5lcmFsLXB1cnBvc2Ugc3ViYWdlbnQsIHN1cGVycG93ZXJzIHByb21wdCIgIkFnZW50IgogICAgICAgICAgICBmaW5hbFJldmlld2VyID0gY29udGFpbmVyICJGaW5hbCByZXZpZXdlciBzdWJhZ2VudCIgIlJlYWRzIHRoZSB3aG9sZSBicmFuY2ggb25jZSBhbGwgdGFza3MgYXJlIGRvbmUuIiAiZ2VuZXJhbC1wdXJwb3NlIHN1YmFnZW50LCBzdXBlcnBvd2VycyBwcm9tcHQiICJBZ2VudCIKICAgICAgICB9CgogICAgICAgIHN1cGVycG93ZXJzID0gc29mdHdhcmVTeXN0ZW0gInN1cGVycG93ZXJzIiAiVGhpcmQtcGFydHkgcGx1Z2luOiB3cml0aW5nLXBsYW5zLCBzdWJhZ2VudC1kcml2ZW4tZGV2ZWxvcG1lbnQsIGZpbmlzaGluZy1hLWRldmVsb3BtZW50LWJyYW5jaCwgYW5kIHRoZSBwcm9tcHQgdGVtcGxhdGVzIGZvciBpbXBsZW1lbnRlciBhbmQgcmV2aWV3ZXJzLiBBZG9wdGVkLCBub3QgcmVidWlsdCAoQURSLTAwMTMgb2YgeHh0aHVuZGVyLWFnZW50aWMtc2tpbGxzKS4iICJFeHRlcm5hbCIKCiAgICAgICAgdGFyZ2V0ID0gc29mdHdhcmVTeXN0ZW0gIlRhcmdldCByZXBvc2l0b3J5IiAiQW55IHJlcG9zaXRvcnkgb24gdGhlIGJvYXJkLCB0aGUgYXV0aG9yJ3Mgb3Igc29tZW9uZSBlbHNlJ3MuIEl0cyBnYXRlIGlzIHRoZSBvbmUgaXQgbmFtZXMgb3IgdGhlIG9uZSBpdHMgQ0kgaW1wbGllcy4iICJSZXBvc2l0b3J5IiB7CiAgICAgICAgICAgIGFnZW50c01kID0gY29udGFpbmVyICJBR0VOVFMubWQiICJUaGUgcmVwb3NpdG9yeSdzIHJ1bGVzOyBhbiBvcHRpb25hbCBzZWN0aW9uIENsb3NlZCBsb29wIG5hbWVzIHRoZSBnYXRlLCB0aGUgcnVicmljIGFuZCB3aGVyZSB0aGUgZ2F0ZSBydW5zLiIgIk1hcmtkb3duIgogICAgICAgICAgICBiYWNrbG9nID0gY29udGFpbmVyICJCYWNrbG9nIiAiZG9jcy9iYWNrbG9nLzogb25lIGZpbGUgcGVyIGl0ZW07IHRoZSBpdGVtIGlzIHRoZSBkZXNpZ24gZG9jdW1lbnQgb2YgaXRzIGNoYW5nZS4iICJNYXJrZG93biIKICAgICAgICAgICAgd29ya3RyZWUgPSBjb250YWluZXIgIkZlYXR1cmUgd29ya3RyZWUiICJBIGZlYXR1cmUgYnJhbmNoIGluIGl0cyBvd24gd29ya3RyZWUsIG9uZSBwZXIgaXRlbS4iICJHaXQgd29ya3RyZWUiCiAgICAgICAgICAgIGNpID0gY29udGFpbmVyICJDSSBkZWZpbml0aW9uIiAicHlwZWxpbmUueWFtbCwgLmdpdGh1Yi93b3JrZmxvd3MvLCAuZ2l0ZWEvd29ya2Zsb3dzLyBvciBhIEplbmtpbnNmaWxlOiB0aGUgY2hlY2tzIGEgcHVsbCByZXF1ZXN0IG11c3QgcGFzcy4iICJZQU1MLCBHcm9vdnkiCiAgICAgICAgICAgIGdhdGUgPSBjb250YWluZXIgIkdhdGUiICJUaGUgY29tbWFuZCB0aGF0IHJ1bnMgZXZlcnkgZGV0ZXJtaW5pc3RpYyBjaGVjayDigJQgdGVzdHMsIGxpbnQsIE1vbGVjdWxlLCBiZWhhdmlvdXJhbCBldmFscyDigJQgYW5kIGV4aXRzIDAgb25seSB3aGVuIGFsbCBhcmUgZ3JlZW46IHRoZSBvbmUgdGhlIHJlcG9zaXRvcnkgbmFtZXMsIG9mdGVuIHNjcmlwdHMvZ2F0ZSwgb3IgdGhlIG9uZSBkZXJpdmVkIGZyb20gaXRzIENJLiIgIkNvbW1hbmQiCiAgICAgICAgICAgIHJ1YnJpYyA9IGNvbnRhaW5lciAiUnVicmljIiAiZG9jcy9ydWJyaWMubWQsIGVsc2UgQ09OVFJJQlVUSU5HLm1kOiB3aGF0IHRoZSByZXZpZXdlcnMganVkZ2UgaW4gdGhpcyByZXBvc2l0b3J5J3MgY2hhbmdlcyDigJQgb25seSB3aGF0IG5lZWRzIGp1ZGdtZW50LiIgIk1hcmtkb3duIiAiUGxhbm5lZCIKICAgICAgICB9CgogICAgICAgIGZvcmdlID0gc29mdHdhcmVTeXN0ZW0gIkZvcmdlIiAiR2l0SHViLCBHaXRlYSBvciBKZW5raW5zOiB0aGUgcHVsbCByZXF1ZXN0IGNhcnJpZXMgdGhlIGV2aWRlbmNlIHBhY2thZ2U7IENJIHJ1bnMgdGhlIGNoZWNrcyBhZ2FpbiwgYW5kIGlzIHRoZSBnYXRlIHdoZXJlIHRoZXkgY2Fubm90IHJ1biBsb2NhbGx5LiIgIkV4dGVybmFsIgoKICAgICAgICAjIENvbnRleHQKICAgICAgICBhdXRob3IgLT4gYXNmICJQdWxscyBpdGVtcywgY29uZmlybXMgZXZpZGVuY2UiCiAgICAgICAgYXV0aG9yIC0+IGZvcmdlICJSZWFkcyB0aGUgZXZpZGVuY2UgcGFja2FnZSwgbWVyZ2VzIgogICAgICAgIGFzZiAtPiB0YXJnZXQgIkNoYW5nZXMsIHRocm91Z2ggYSBmZWF0dXJlIGJyYW5jaCIKICAgICAgICBhc2YgLT4gc3VwZXJwb3dlcnMgIlJ1bnMgdGhlIGxvb3Agd2l0aCIKICAgICAgICBhc2YgLT4gZm9yZ2UgIk9wZW5zIHRoZSBwdWxsIHJlcXVlc3Qgd2l0aCB0aGUgZXZpZGVuY2UgcGFja2FnZSIKCiAgICAgICAgIyBUaGUgYXV0aG9yIGFuZCB0aGUgYm9hcmQKICAgICAgICBhdXRob3IgLT4gYXNmLmthc3Rlbi5ib2FyZCAiUmFua3MgdGhlIGNhcmRzIiAibmV4dCBwdXQiCiAgICAgICAgYXV0aG9yIC0+IGFzZi5zZXNzaW9uICJQdWxscyBhbiBpdGVtLCBhbnN3ZXJzIHF1ZXN0aW9ucyIgImNoYXQiCgogICAgICAgICMgVGhlIHNlc3Npb24gdXNlcyBib3RoIHBsdWdpbnMKICAgICAgICBhc2Yuc2Vzc2lvbiAtPiBhc2YuZGV2U2tpbGxzICJJbnZva2VzIHNraWxscyIKICAgICAgICBhc2Yuc2Vzc2lvbiAtPiBzdXBlcnBvd2VycyAiUGxhbnMgdGhlIGl0ZW0sIHJ1bnMgc3ViYWdlbnQtZHJpdmVuLWRldmVsb3BtZW50IgoKICAgICAgICAjIE1lY2hhbmljcyB0aHJvdWdoIHNjcmlwdHMKICAgICAgICBhc2YuZGV2U2tpbGxzLmJhY2tsb2dPcHMgLT4gYXNmLmRldlNraWxscy5iYWNrbG9nU2NyaXB0ICJTZXRzIHRoZSBzdGF0dXMiCiAgICAgICAgYXNmLmRldlNraWxscy5yZWZpbmVtZW50IC0+IGFzZi5kZXZTa2lsbHMuYmFja2xvZ1NjcmlwdCAiQ3JlYXRlcyB0aGUgaXRlbSIKICAgICAgICBhc2YuZGV2U2tpbGxzLmJhY2tsb2dTY3JpcHQgLT4gdGFyZ2V0LmJhY2tsb2cgIlJlYWRzIGFuZCB3cml0ZXMgaXRlbXMiCiAgICAgICAgYXNmLmRldlNraWxscy5iYWNrbG9nT3BzIC0+IGFzZi5kZXZTa2lsbHMuc3RvcmVTY3JpcHQgIk1vdmVzIHRoZSBjYXJkIgogICAgICAgIGFzZi5kZXZTa2lsbHMubmV4dCAtPiBhc2YuZGV2U2tpbGxzLnN0b3JlU2NyaXB0ICJQdXRzIGFuZCBkcm9wcyBjYXJkcyIKICAgICAgICBhc2YuZGV2U2tpbGxzLmxvZ2Jvb2tTa2lsbCAtPiBhc2YuZGV2U2tpbGxzLnN0b3JlU2NyaXB0ICJXcml0ZXMgYSBsb2cgbGluZSIKICAgICAgICBhc2YuZGV2U2tpbGxzLnN0b3JlU2NyaXB0IC0+IGFzZi5rYXN0ZW4uY29udHJhY3RzICJSZWFkcyBhIGNvbnRyYWN0IgogICAgICAgIGFzZi5kZXZTa2lsbHMuc3RvcmVTY3JpcHQgLT4gYXNmLmthc3Rlbi5ib2FyZCAiQ29tbWl0cyB0aGUgYm9hcmQiCiAgICAgICAgYXNmLmRldlNraWxscy5zdG9yZVNjcmlwdCAtPiBhc2Yua2FzdGVuLmxvZ2Jvb2sgIkNvbW1pdHMgdGhlIGxvZyIKICAgICAgICBhc2YuZGV2U2tpbGxzLm5leHQgLT4gYXNmLmthc3Rlbi5yZWdpc3RyeSAiUmVzb2x2ZXMgYSByZXBvc2l0b3J5IgoKICAgICAgICAjIFRoZSBsb29wCiAgICAgICAgYXNmLmRldlNraWxscy5sb29wRHJpdmVyIC0+IGFzZi5rYXN0ZW4uY29udHJhY3RzICJSZWFkcyB0aGUgQ2xvc2VkIGxvb3AgY29udHJhY3QiCiAgICAgICAgYXNmLmRldlNraWxscy5sb29wRHJpdmVyIC0+IHRhcmdldC5hZ2VudHNNZCAiUmVhZHMgd2hlcmUgdGhlIGdhdGUgYW5kIHRoZSBydWJyaWMgYXJlIgogICAgICAgIGFzZi5kZXZTa2lsbHMubG9vcERyaXZlciAtPiBhc2Yua2FzdGVuLnJlZ2lzdHJ5ICJSZWFkcyBhIGdhdGUgY29ycmVjdGlvbiIKICAgICAgICBhc2YuZGV2U2tpbGxzLmxvb3BEcml2ZXIgLT4gdGFyZ2V0LmNpICJEZXJpdmVzIHRoZSBnYXRlIGZyb20sIHdoZW4gdGhlIHJlcG9zaXRvcnkgbmFtZXMgbm9uZSIKICAgICAgICBhc2YuZGV2U2tpbGxzLmxvb3BEcml2ZXIgLT4gYXNmLmthc3Rlbi5nZW5lcmFsUnVicmljICJIYW5kcyBpdCB0byB0aGUgcmV2aWV3ZXJzIGFzIGdsb2JhbCBjb25zdHJhaW50cyIKICAgICAgICBhc2YuZGV2U2tpbGxzLmxvb3BEcml2ZXIgLT4gdGFyZ2V0LnJ1YnJpYyAiSGFuZHMgaXQgdG8gdGhlIHJldmlld2VycyBhcyBnbG9iYWwgY29uc3RyYWludHMiCiAgICAgICAgYXNmLmRldlNraWxscy5sb29wRHJpdmVyIC0+IHRhcmdldC5nYXRlICJSdW5zIGl0OyB0aGUgbG9vcCBlbmRzIG9ubHkgd2hlbiBpdCBpcyBncmVlbiIKICAgICAgICBhc2YuZGV2U2tpbGxzLmxvb3BEcml2ZXIgLT4gZm9yZ2UgIldhaXRzIGZvciBncmVlbiBDSSBjaGVja3MsIHdoZXJlIHRoZSBDSSBpcyB0aGUgZ2F0ZSIKICAgICAgICBhc2YuZGV2U2tpbGxzLmxvb3BEcml2ZXIgLT4gZm9yZ2UgIldyaXRlcyB0aGUgZXZpZGVuY2UgcGFja2FnZSBpbnRvIHRoZSBwdWxsIHJlcXVlc3QiCiAgICAgICAgYXNmLnNlc3Npb24gLT4gYXNmLmltcGxlbWVudGVyICJEaXNwYXRjaGVzLCBvbmUgdGFzayBhdCBhIHRpbWUiCiAgICAgICAgYXNmLnNlc3Npb24gLT4gYXNmLnRhc2tSZXZpZXdlciAiRGlzcGF0Y2hlcyBhZnRlciBlYWNoIHRhc2ssIHdpdGggdGhlIHJ1YnJpYyIKICAgICAgICBhc2Yuc2Vzc2lvbiAtPiBhc2YuZmluYWxSZXZpZXdlciAiRGlzcGF0Y2hlcyBvbmNlLCBmb3IgdGhlIHdob2xlIGJyYW5jaCIKICAgICAgICBhc2YuaW1wbGVtZW50ZXIgLT4gdGFyZ2V0Lndvcmt0cmVlICJDb21taXRzLCB0ZXN0IGZpcnN0IgogICAgICAgIGFzZi5pbXBsZW1lbnRlciAtPiB0YXJnZXQuZ2F0ZSAiUnVucyB0aGUgdGVzdHMgb2YgaXRzIHRhc2siCiAgICAgICAgYXNmLnRhc2tSZXZpZXdlciAtPiB0YXJnZXQucnVicmljICJKdWRnZXMgdGhlIGRpZmYgYWdhaW5zdCIKICAgICAgICBhc2YudGFza1Jldmlld2VyIC0+IGFzZi5rYXN0ZW4uZ2VuZXJhbFJ1YnJpYyAiSnVkZ2VzIHRoZSBkaWZmIGFnYWluc3QiCiAgICAgICAgYXNmLnRhc2tSZXZpZXdlciAtPiB0YXJnZXQud29ya3RyZWUgIlJlYWRzIHRoZSBkaWZmIgogICAgICAgIGFzZi5maW5hbFJldmlld2VyIC0+IHRhcmdldC53b3JrdHJlZSAiUmVhZHMgdGhlIGJyYW5jaCIKICAgICAgICBhc2Yuc2Vzc2lvbiAtPiB0YXJnZXQuZ2F0ZSAiUnVucyBiZWZvcmUgdGhlIGxvb3AgZW5kcyIKICAgICAgICBhc2Yuc2Vzc2lvbiAtPiBmb3JnZSAiT3BlbnMgdGhlIHB1bGwgcmVxdWVzdCIKICAgICAgICB0YXJnZXQud29ya3RyZWUgLT4gZm9yZ2UgIlB1c2hlZCB0byIKICAgIH0KCiAgICB2aWV3cyB7CiAgICAgICAgc3lzdGVtQ29udGV4dCBhc2YgIkNvbnRleHQiICJXaG8gYW5kIHdoYXQgdGhlIEFnZW50aWMgU29mdHdhcmUgRm9yZ2Ugd29ya3Mgd2l0aC4iIHsKICAgICAgICAgICAgaW5jbHVkZSAqCiAgICAgICAgfQoKICAgICAgICBjb250YWluZXIgYXNmICJDb250YWluZXJzIiAiVGhlIHBhcnRzIG9mIHRoZSBmb3JnZSBhbmQgdGhlIHRhcmdldCByZXBvc2l0b3J5IHRoZXkgY2hhbmdlLiIgewogICAgICAgICAgICBpbmNsdWRlICoKICAgICAgICB9CgogICAgICAgIGNvbnRhaW5lciB0YXJnZXQgIlRhcmdldFJlcG9zaXRvcnkiICJXaGF0IGEgcmVwb3NpdG9yeSBzdXBwbGllcyB0byB0aGUgbG9vcCwgYW5kIHdobyB1c2VzIGl0LiIgewogICAgICAgICAgICBpbmNsdWRlICoKICAgICAgICB9CgogICAgICAgIGNvbXBvbmVudCBhc2YuZGV2U2tpbGxzICJQbHVnaW4iICJUaGUgc2tpbGxzIG9mIHh4dGh1bmRlci1kZXYtc2tpbGxzIGFuZCB0aGUgc2NyaXB0cyB0aGF0IGRvIHRoZWlyIG1lY2hhbmljYWwgc3RlcHMuIiB7CiAgICAgICAgICAgIGluY2x1ZGUgKgogICAgICAgIH0KCiAgICAgICAgZHluYW1pYyBhc2YgIkxvb3AiICJPbmUgaXRlbSwgZnJvbSBpdHMgY2FyZCB0byB0aGUgbWVyZ2UuIiB7CiAgICAgICAgICAgIGF1dGhvciAtPiBhc2Yuc2Vzc2lvbiAiUHVsbHMgdGhlIGl0ZW0gZnJvbSB0aGUgYm9hcmQiCiAgICAgICAgICAgIGFzZi5zZXNzaW9uIC0+IGFzZi5kZXZTa2lsbHMgImJhY2tsb2ctb3BzOiBJbiBQcm9ncmVzcywgY2FyZCB0byBJbiBQcm9ncmVzcywgbG9nIGxpbmUiCiAgICAgICAgICAgIGFzZi5zZXNzaW9uIC0+IHN1cGVycG93ZXJzICJ3cml0aW5nLXBsYW5zOiB0aGUgaXRlbSBiZWNvbWVzIGEgcGxhbiBvZiB0YXNrcyIKICAgICAgICAgICAgYXNmLnNlc3Npb24gLT4gYXNmLmltcGxlbWVudGVyICJUYXNrIG46IHdyaXRlIHRoZSB0ZXN0LCB0aGVuIHRoZSBjb2RlIgogICAgICAgICAgICBhc2YuaW1wbGVtZW50ZXIgLT4gdGFyZ2V0Lndvcmt0cmVlICJDb21taXRzIHRoZSB0YXNrIgogICAgICAgICAgICBhc2Yuc2Vzc2lvbiAtPiBhc2YudGFza1Jldmlld2VyICJSZXZpZXcgdGFzayBuIGFnYWluc3QgdGhlIHRhc2sgYW5kIHRoZSBydWJyaWMiCiAgICAgICAgICAgIGFzZi50YXNrUmV2aWV3ZXIgLT4gYXNmLmthc3RlbiAiSnVkZ2VzIHRoZSBkaWZmIGFnYWluc3QgdGhlIGdlbmVyYWwgcnVicmljIgogICAgICAgICAgICBhc2YudGFza1Jldmlld2VyIC0+IHRhcmdldC5ydWJyaWMgIkp1ZGdlcyB0aGUgZGlmZiBhZ2FpbnN0IHRoZSByZXBvc2l0b3J5J3MgcnVicmljIgogICAgICAgICAgICBhc2Yuc2Vzc2lvbiAtPiBhc2YuaW1wbGVtZW50ZXIgIkZpeCByb3VuZCwgdW50aWwgYXBwcm92ZWQgKGF0IG1vc3QgZml2ZSkiCiAgICAgICAgICAgIGFzZi5zZXNzaW9uIC0+IGFzZi5maW5hbFJldmlld2VyICJSZXZpZXcgdGhlIHdob2xlIGJyYW5jaCIKICAgICAgICAgICAgYXNmLnNlc3Npb24gLT4gdGFyZ2V0LmdhdGUgIlJ1biB0aGUgZ2F0ZSDigJQgb3Igd2FpdCBmb3IgdGhlIENJIHdoZXJlIGl0IGlzIHRoZSBnYXRlOyBhIHJlZCBnYXRlIHNlbmRzIHRoZSB3b3JrIGJhY2sgaW50byBhIGZpeCByb3VuZCIKICAgICAgICAgICAgYXNmLnNlc3Npb24gLT4gZm9yZ2UgIk9wZW4gdGhlIHB1bGwgcmVxdWVzdCB3aXRoIHRoZSBldmlkZW5jZSBwYWNrYWdlIgogICAgICAgICAgICBhdXRob3IgLT4gZm9yZ2UgIkNvbmZpcm1zIHRoZSBldmlkZW5jZSwgbWVyZ2VzIgogICAgICAgIH0KCiAgICAgICAgc3R5bGVzIHsKICAgICAgICAgICAgZWxlbWVudCAiUGVyc29uIiB7CiAgICAgICAgICAgICAgICBzaGFwZSBQZXJzb24KICAgICAgICAgICAgICAgIGJhY2tncm91bmQgIzFmNGU3OQogICAgICAgICAgICAgICAgY29sb3IgI2ZmZmZmZgogICAgICAgICAgICB9CiAgICAgICAgICAgIGVsZW1lbnQgIlNvZnR3YXJlIFN5c3RlbSIgewogICAgICAgICAgICAgICAgYmFja2dyb3VuZCAjMmU3NWI2CiAgICAgICAgICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgICAgICAgIH0KICAgICAgICAgICAgZWxlbWVudCAiQ29udGFpbmVyIiB7CiAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kICM1YjliZDUKICAgICAgICAgICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgICAgICAgfQogICAgICAgICAgICBlbGVtZW50ICJDb21wb25lbnQiIHsKICAgICAgICAgICAgICAgIGJhY2tncm91bmQgIzlkYzNlNgogICAgICAgICAgICAgICAgY29sb3IgIzAwMDAwMAogICAgICAgICAgICB9CiAgICAgICAgICAgIGVsZW1lbnQgIkV4dGVybmFsIiB7CiAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kICM3ZjdmN2YKICAgICAgICAgICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgICAgICAgfQogICAgICAgICAgICBlbGVtZW50ICJBZ2VudCIgewogICAgICAgICAgICAgICAgc2hhcGUgUm9ib3QKICAgICAgICAgICAgfQogICAgICAgICAgICBlbGVtZW50ICJSZXBvc2l0b3J5IiB7CiAgICAgICAgICAgICAgICBzaGFwZSBGb2xkZXIKICAgICAgICAgICAgfQogICAgICAgICAgICBlbGVtZW50ICJQbHVnaW4iIHsKICAgICAgICAgICAgICAgIHNoYXBlIENvbXBvbmVudAogICAgICAgICAgICB9CiAgICAgICAgICAgIGVsZW1lbnQgIlBsYW5uZWQiIHsKICAgICAgICAgICAgICAgIGJvcmRlciBkYXNoZWQKICAgICAgICAgICAgICAgIG9wYWNpdHkgNjAKICAgICAgICAgICAgfQogICAgICAgIH0KICAgIH0KfQ=="
+  },
+  "views" : {
+    "componentViews" : [ {
+      "containerId" : "10",
+      "description" : "The skills of xxthunder-dev-skills and the scripts that do their mechanical steps.",
+      "dimensions" : {
+        "height" : 2658,
+        "width" : 3420
+      },
+      "elements" : [ {
+        "id" : "3",
+        "x" : 1929,
+        "y" : 1439
+      }, {
+        "id" : "11",
+        "x" : 299,
+        "y" : 593
+      }, {
+        "id" : "12",
+        "x" : 299,
+        "y" : 1293
+      }, {
+        "id" : "13",
+        "x" : 299,
+        "y" : 1643
+      }, {
+        "id" : "14",
+        "x" : 299,
+        "y" : 943
+      }, {
+        "id" : "15",
+        "x" : 1089,
+        "y" : 1842
+      }, {
+        "id" : "16",
+        "x" : 1089,
+        "y" : 593
+      }, {
+        "id" : "17",
+        "x" : 1089,
+        "y" : 1206
+      }, {
+        "id" : "22",
+        "x" : 2755,
+        "y" : 770
+      }, {
+        "id" : "29",
+        "x" : 2769,
+        "y" : 1753
+      } ],
+      "externalContainerBoundariesVisible" : false,
+      "key" : "Plugin",
+      "name" : "Component View: Agentic Software Forge - xxthunder-dev-skills",
+      "order" : 4,
+      "relationships" : [ {
+        "id" : "100",
+        "vertices" : [ {
+          "x" : 2980,
+          "y" : 1075
+        }, {
+          "x" : 2994,
+          "y" : 1745
+        } ]
+      }, {
+        "id" : "40"
+      }, {
+        "id" : "41"
+      }, {
+        "id" : "43",
+        "vertices" : [ {
+          "x" : 1759,
+          "y" : 743
+        } ]
+      }, {
+        "id" : "47",
+        "vertices" : [ {
+          "x" : 919,
+          "y" : 1085
+        } ]
+      }, {
+        "id" : "48",
+        "vertices" : [ {
+          "x" : 910,
+          "y" : 1405
+        } ]
+      }, {
+        "id" : "49",
+        "vertices" : [ {
+          "x" : 919,
+          "y" : 1576
+        } ]
+      }, {
+        "id" : "51",
+        "vertices" : [ {
+          "x" : 1759,
+          "y" : 1356
+        } ]
+      }, {
+        "id" : "59",
+        "vertices" : [ {
+          "x" : 919,
+          "y" : 1720
+        }, {
+          "x" : 1759,
+          "y" : 1720
+        } ]
+      }, {
+        "id" : "62",
+        "vertices" : [ {
+          "x" : 1589,
+          "y" : 1871
+        }, {
+          "x" : 1759,
+          "y" : 1871
+        } ]
+      }, {
+        "id" : "64",
+        "vertices" : [ {
+          "x" : 1589,
+          "y" : 1056
+        }, {
+          "x" : 1759,
+          "y" : 1056
+        } ]
+      }, {
+        "id" : "79",
+        "vertices" : [ {
+          "x" : 1589,
+          "y" : 2030
+        }, {
+          "x" : 2599,
+          "y" : 2030
+        } ]
+      }, {
+        "id" : "81",
+        "vertices" : [ {
+          "x" : 1589,
+          "y" : 2176
+        }, {
+          "x" : 2599,
+          "y" : 2176
+        } ]
+      } ]
+    } ],
+    "configuration" : {
+      "lastSavedView" : "Containers",
+      "metadataSymbols" : "SquareBrackets",
+      "styles" : {
+        "elements" : [ {
+          "shape" : "Robot",
+          "tag" : "Agent"
+        }, {
+          "background" : "#9dc3e6",
+          "color" : "#000000",
+          "tag" : "Component"
+        }, {
+          "background" : "#5b9bd5",
+          "color" : "#ffffff",
+          "tag" : "Container"
+        }, {
+          "background" : "#7f7f7f",
+          "color" : "#ffffff",
+          "tag" : "External"
+        }, {
+          "background" : "#1f4e79",
+          "color" : "#ffffff",
+          "shape" : "Person",
+          "tag" : "Person"
+        }, {
+          "border" : "Dashed",
+          "opacity" : 60,
+          "tag" : "Planned"
+        }, {
+          "shape" : "Component",
+          "tag" : "Plugin"
+        }, {
+          "shape" : "Folder",
+          "tag" : "Repository"
+        }, {
+          "background" : "#2e75b6",
+          "color" : "#ffffff",
+          "tag" : "Software System"
+        } ]
+      },
+      "terminology" : { }
+    },
+    "containerViews" : [ {
+      "description" : "The parts of the forge and the target repository they change.",
+      "dimensions" : {
+        "height" : 2522,
+        "width" : 4035
+      },
+      "elements" : [ {
+        "id" : "1",
+        "x" : 219,
+        "y" : 417
+      }, {
+        "id" : "3",
+        "x" : 2539,
+        "y" : 385
+      }, {
+        "id" : "9",
+        "x" : 1009,
+        "y" : 1285
+      }, {
+        "id" : "10",
+        "x" : 1749,
+        "y" : 485
+      }, {
+        "id" : "18",
+        "x" : 1774,
+        "y" : 835
+      }, {
+        "id" : "19",
+        "x" : 1774,
+        "y" : 1285
+      }, {
+        "id" : "20",
+        "x" : 1774,
+        "y" : 1735
+      }, {
+        "id" : "21",
+        "x" : 199,
+        "y" : 1602
+      }, {
+        "id" : "22",
+        "x" : 3384,
+        "y" : 1467
+      }, {
+        "id" : "29",
+        "x" : 3384,
+        "y" : 772
+      } ],
+      "externalSoftwareSystemBoundariesVisible" : false,
+      "key" : "Containers",
+      "name" : "Container View: Agentic Software Forge",
+      "order" : 2,
+      "relationships" : [ {
+        "id" : "100"
+      }, {
+        "id" : "31",
+        "vertices" : [ {
+          "x" : 914,
+          "y" : 187
+        }, {
+          "x" : 3179,
+          "y" : 187
+        } ]
+      }, {
+        "id" : "36",
+        "vertices" : [ {
+          "x" : 1389,
+          "y" : 435
+        }, {
+          "x" : 2369,
+          "y" : 435
+        } ]
+      }, {
+        "id" : "37",
+        "vertices" : [ {
+          "x" : 659,
+          "y" : 887
+        } ]
+      }, {
+        "id" : "38",
+        "vertices" : [ {
+          "x" : 1579,
+          "y" : 635
+        } ]
+      }, {
+        "id" : "39",
+        "vertices" : [ {
+          "x" : 814,
+          "y" : 1622
+        } ]
+      }, {
+        "id" : "45",
+        "vertices" : [ {
+          "x" : 2424,
+          "y" : 842
+        } ]
+      }, {
+        "id" : "53",
+        "vertices" : [ {
+          "x" : 2369,
+          "y" : 582
+        } ]
+      }, {
+        "id" : "80",
+        "vertices" : [ {
+          "x" : 3209,
+          "y" : 925
+        } ]
+      }, {
+        "id" : "82",
+        "vertices" : [ {
+          "x" : 1579,
+          "y" : 1035
+        } ]
+      }, {
+        "id" : "83"
+      }, {
+        "id" : "84",
+        "vertices" : [ {
+          "x" : 1579,
+          "y" : 1935
+        } ]
+      }, {
+        "id" : "86",
+        "vertices" : [ {
+          "x" : 2379,
+          "y" : 1035
+        } ]
+      }, {
+        "id" : "90",
+        "vertices" : [ {
+          "x" : 2174,
+          "y" : 1617
+        } ]
+      }, {
+        "id" : "92",
+        "vertices" : [ {
+          "x" : 2414,
+          "y" : 1486
+        }, {
+          "x" : 2599,
+          "y" : 687
+        } ]
+      }, {
+        "id" : "95",
+        "vertices" : [ {
+          "x" : 2369,
+          "y" : 1935
+        } ]
+      }, {
+        "id" : "97",
+        "vertices" : [ {
+          "x" : 1579,
+          "y" : 2212
+        }, {
+          "x" : 2369,
+          "y" : 2212
+        } ]
+      }, {
+        "id" : "98",
+        "vertices" : [ {
+          "x" : 1209,
+          "y" : 292
+        }, {
+          "x" : 3154,
+          "y" : 292
+        } ]
+      } ],
+      "softwareSystemId" : "2"
+    }, {
+      "description" : "What a repository supplies to the loop, and who uses it.",
+      "elements" : [ {
+        "id" : "2",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "23",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "24",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "25",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "26",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "27",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "28",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "29",
+        "x" : 0,
+        "y" : 0
+      } ],
+      "externalSoftwareSystemBoundariesVisible" : false,
+      "key" : "TargetRepository",
+      "name" : "Container View: Target repository",
+      "order" : 3,
+      "relationships" : [ {
+        "id" : "34"
+      }, {
+        "id" : "46"
+      }, {
+        "id" : "66"
+      }, {
+        "id" : "70"
+      }, {
+        "id" : "75"
+      }, {
+        "id" : "78"
+      }, {
+        "id" : "87"
+      }, {
+        "id" : "99"
+      } ],
+      "softwareSystemId" : "22"
+    } ],
+    "dynamicViews" : [ {
+      "description" : "One item, from its card to the merge.",
+      "dimensions" : {
+        "height" : 2229,
+        "width" : 4075
+      },
+      "elementId" : "2",
+      "elements" : [ {
+        "id" : "1",
+        "x" : 234,
+        "y" : 223
+      }, {
+        "id" : "3",
+        "x" : 2594,
+        "y" : 759
+      }, {
+        "id" : "9",
+        "x" : 1014,
+        "y" : 875
+      }, {
+        "id" : "10",
+        "x" : 1754,
+        "y" : 193
+      }, {
+        "id" : "18",
+        "x" : 1779,
+        "y" : 543
+      }, {
+        "id" : "19",
+        "x" : 1779,
+        "y" : 993
+      }, {
+        "id" : "20",
+        "x" : 1779,
+        "y" : 1443
+      }, {
+        "id" : "21",
+        "x" : 199,
+        "y" : 1468
+      }, {
+        "id" : "25",
+        "x" : 3303,
+        "y" : 532
+      }, {
+        "id" : "27",
+        "x" : 3303,
+        "y" : 882
+      }, {
+        "id" : "28",
+        "x" : 3303,
+        "y" : 1232
+      }, {
+        "id" : "29",
+        "x" : 204,
+        "y" : 978
+      } ],
+      "externalBoundariesVisible" : false,
+      "key" : "Loop",
+      "name" : "Dynamic View: Agentic Software Forge",
+      "order" : 5,
+      "relationships" : [ {
+        "description" : "Pulls the item from the board",
+        "id" : "37",
+        "order" : "1",
+        "response" : false,
+        "vertices" : [ {
+          "x" : 644,
+          "y" : 593
+        } ]
+      }, {
+        "description" : "backlog-ops: In Progress, card to In Progress, log line",
+        "id" : "38",
+        "order" : "2",
+        "response" : false,
+        "vertices" : [ {
+          "x" : 1385,
+          "y" : 343
+        } ]
+      }, {
+        "description" : "writing-plans: the item becomes a plan of tasks",
+        "id" : "39",
+        "order" : "3",
+        "response" : false,
+        "vertices" : [ {
+          "x" : 844,
+          "y" : 1358
+        } ]
+      }, {
+        "description" : "Task n: write the test, then the code",
+        "id" : "82",
+        "order" : "4",
+        "response" : false,
+        "vertices" : [ {
+          "x" : 1415,
+          "y" : 743
+        } ]
+      }, {
+        "description" : "Commits the task",
+        "id" : "85",
+        "order" : "5",
+        "response" : false,
+        "vertices" : [ {
+          "x" : 2724,
+          "y" : 682
+        } ]
+      }, {
+        "description" : "Review task n against the task and the rubric",
+        "id" : "83",
+        "order" : "6",
+        "response" : false,
+        "vertices" : [ {
+          "x" : 1584,
+          "y" : 1193
+        } ]
+      }, {
+        "description" : "Judges the diff against the general rubric",
+        "id" : "92",
+        "order" : "7",
+        "response" : false,
+        "vertices" : [ {
+          "x" : 2374,
+          "y" : 909
+        } ]
+      }, {
+        "description" : "Judges the diff against the repository's rubric",
+        "id" : "89",
+        "order" : "8",
+        "response" : false,
+        "vertices" : [ {
+          "x" : 3014,
+          "y" : 1193
+        } ]
+      }, {
+        "description" : "Fix round, until approved (at most five)",
+        "id" : "82",
+        "order" : "9",
+        "response" : false,
+        "vertices" : [ {
+          "x" : 1490,
+          "y" : 956
+        } ]
+      }, {
+        "description" : "Review the whole branch",
+        "id" : "84",
+        "order" : "10",
+        "response" : false,
+        "vertices" : [ {
+          "x" : 1584,
+          "y" : 1643
+        } ]
+      }, {
+        "description" : "Run the gate — or wait for the CI where it is the gate; a red gate sends the work back into a fix round",
+        "id" : "96",
+        "order" : "11",
+        "response" : false,
+        "vertices" : [ {
+          "x" : 1709,
+          "y" : 1423
+        }, {
+          "x" : 2359,
+          "y" : 1423
+        }, {
+          "x" : 2904,
+          "y" : 1713
+        }, {
+          "x" : 3874,
+          "y" : 1713
+        }, {
+          "x" : 3874,
+          "y" : 1032
+        } ]
+      }, {
+        "description" : "Open the pull request with the evidence package",
+        "id" : "98",
+        "order" : "12",
+        "response" : false,
+        "vertices" : [ {
+          "x" : 764,
+          "y" : 1102
+        } ]
+      }, {
+        "description" : "Confirms the evidence, merges",
+        "id" : "31",
+        "order" : "13",
+        "response" : false,
+        "vertices" : [ {
+          "x" : 429,
+          "y" : 628
+        } ]
+      } ]
+    } ],
+    "systemContextViews" : [ {
+      "description" : "Who and what the Agentic Software Forge works with.",
+      "dimensions" : {
+        "height" : 1282,
+        "width" : 3170
+      },
+      "elements" : [ {
+        "id" : "1",
+        "x" : 200,
+        "y" : 608
+      }, {
+        "id" : "2",
+        "x" : 940,
+        "y" : 493
+      }, {
+        "id" : "21",
+        "x" : 1730,
+        "y" : 493
+      }, {
+        "id" : "22",
+        "x" : 1730,
+        "y" : 143
+      }, {
+        "id" : "29",
+        "x" : 2520,
+        "y" : 724
+      } ],
+      "enterpriseBoundaryVisible" : true,
+      "key" : "Context",
+      "name" : "System Context View: Agentic Software Forge",
+      "order" : 1,
+      "relationships" : [ {
+        "id" : "100",
+        "vertices" : [ {
+          "x" : 2350,
+          "y" : 293
+        } ]
+      }, {
+        "id" : "30",
+        "vertices" : [ {
+          "x" : 770,
+          "y" : 643
+        } ]
+      }, {
+        "id" : "31",
+        "vertices" : [ {
+          "x" : 770,
+          "y" : 974
+        }, {
+          "x" : 2350,
+          "y" : 974
+        } ]
+      }, {
+        "id" : "32",
+        "vertices" : [ {
+          "x" : 1560,
+          "y" : 293
+        } ]
+      }, {
+        "id" : "33"
+      }, {
+        "id" : "34",
+        "vertices" : [ {
+          "x" : 1560,
+          "y" : 883
+        }, {
+          "x" : 2350,
+          "y" : 883
+        } ]
+      } ],
+      "softwareSystemId" : "2"
+    } ]
+  }
+}

@@ -45,7 +45,12 @@ Kasten goes into its own files in its root — its own `AGENTS.md` imports
   board and the closed loop
 - [rubric.md](rubric.md) — what a reviewer in the closed loop judges in every repository
 - `architecture/workspace.dsl` — the closed loop as a Structurizr workspace; `lint.sh`
-  validates it
+  validates it, and `scripts/structurizr-local.sh [--port=<port>] [--open]` shows its views
+  on http://localhost:8080 with podman or docker (Ctrl+C stops it); `--open` opens them in
+  the browser once the viewer answers. Arrange a view in the viewer's edit mode and save it
+  there. The viewer writes the model
+  and the layout of the views to `workspace.json`, which is committed together with
+  `workspace.dsl`. When only its `lastModifiedDate` changed, discard that change
 - [CONVENTIONS.md](CONVENTIONS.md) — principles, file names, frontmatter, linking, language
 - `templates/` — a template per note type: `learning`, `literature`, `engineering`
 - `scripts/` — `lint.sh`, `review.sh`, `new-zettel.sh`, and `kasten.py`, which makes a new

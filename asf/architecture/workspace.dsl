@@ -109,22 +109,18 @@ workspace "Agentic Software Forge" "The closed engineering loop, with the Kasten
     views {
         systemContext asf "Context" "Who and what the Agentic Software Forge works with." {
             include *
-            autoLayout lr
         }
 
         container asf "Containers" "The parts of the forge and the target repository they change." {
             include *
-            autoLayout lr
         }
 
         container target "TargetRepository" "What a repository supplies to the loop, and who uses it." {
             include *
-            autoLayout lr
         }
 
         component asf.devSkills "Plugin" "The skills of xxthunder-dev-skills and the scripts that do their mechanical steps." {
             include *
-            autoLayout lr
         }
 
         dynamic asf "Loop" "One item, from its card to the merge." {
@@ -141,7 +137,6 @@ workspace "Agentic Software Forge" "The closed engineering loop, with the Kasten
             asf.session -> target.gate "Run the gate — or wait for the CI where it is the gate; a red gate sends the work back into a fix round"
             asf.session -> forge "Open the pull request with the evidence package"
             author -> forge "Confirms the evidence, merges"
-            autoLayout lr
         }
 
         styles {
