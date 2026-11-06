@@ -1,0 +1,18 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Architecture: Structurizr local",
+            "detail": "Shows asf/architecture in Structurizr local and opens it in the browser; stop the task to stop the viewer.",
+            "type": "shell",
+            "command": "${workspaceFolder}/asf/scripts/structurizr-local.sh",
+            "args": ["--open"],
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
+        }
+    ]
+}
