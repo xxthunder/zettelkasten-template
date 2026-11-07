@@ -234,8 +234,9 @@ and nothing else about this repository; keep it complete.
     its output on failure; where the CI is the gate, its checks and their result.
   - **Review** — the findings of each round and how each was resolved; the number of rounds.
   - **Measurements** — optional: eval runs, trigger runs, costs.
-  - **Your steps** — what only the author can do, as exact commands: a run against real
-    hosts, a merge.
+  - **Your steps** — what only the author can do, as exact commands, in this order: the UAT
+    on the pull request's branch — a run against real hosts or the author's own machine —,
+    then the merge once the UAT holds, then closing the item.
   - **Open** — what is not done, each with its follow-up item.
 - **Language**: the evidence package is English (`asf/CONVENTIONS.md` → Language).
 
