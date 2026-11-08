@@ -228,10 +228,10 @@ and nothing else about this repository; keep it complete.
 - **Evidence package**: the body of the pull request, for now — the pull request stays so
   the loop can be evaluated as a whole. Its sections, in this order:
   - **Item** — the item's ID, title and link.
-  - **What changes** — one line per commit, with the reason.
-  - **Gate** — the command, how it was found (named by the repository, a registry
-    correction, or derived from which CI file), where it ran, its result, and the tail of
-    its output on failure; where the CI is the gate, its checks and their result.
+  - **What changes** — a short summary of the change as a whole, in a few sentences; the
+    commits carry the details.
+  - **Gate** — in a few sentences: what the gate is and why, what ran locally and why, and
+    the result.
   - **Review** — the findings of each round and how each was resolved; the number of rounds.
   - **Measurements** — optional: eval runs, trigger runs, costs.
   - **Your steps** — what only the author can do, as exact commands, in this order: the UAT
