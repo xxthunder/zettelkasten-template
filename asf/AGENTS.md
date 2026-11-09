@@ -219,6 +219,10 @@ and nothing else about this repository; keep it complete.
   `AGENTS.md` — may name its gate, its rubric and where the gate runs in a section headed
   `Closed loop`. A repository that has none is not asked for one: the loop takes part in
   other people's repositories as they are.
+- **In a Kasten, only code work**: an item that changes `asf/` or another script goes
+  through the loop. Notes, log lines, board cards and memories go straight to `develop`,
+  without a gate and without a pull request. The Kasten's gate is its `scripts/gate`, which
+  calls the template's `asf/scripts/gate`.
 - **No CI and no gate, no loop**: a repository that names no gate and has no CI does not
   take part. The skill says so and stops; a loop that ends on a reviewer's approval alone
   ends on a model's judgment.

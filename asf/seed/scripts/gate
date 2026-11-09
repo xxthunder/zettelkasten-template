@@ -1,0 +1,7 @@
+#!/bin/bash
+# The gate of this Kasten (asf/AGENTS.md → Closed loop). Exits 0 only when every
+# check is green. The template's checks run in asf/scripts/gate; the Kasten's own
+# go below that call.
+
+set -e
+bash "$(dirname "${BASH_SOURCE[0]}")/../asf/scripts/gate"

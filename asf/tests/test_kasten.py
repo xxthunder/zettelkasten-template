@@ -8,6 +8,7 @@ commits the result.
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -89,6 +90,13 @@ def test_new_seeds_a_leak_patterns_file_that_holds_no_pattern(template, tmp_path
     target = make(template, tmp_path, env)
     lines = (target / "scripts" / "leak-patterns.txt").read_text().splitlines()
     assert lines and all(not line.strip() or line.startswith("#") for line in lines)
+
+
+def test_new_seeds_an_executable_gate(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    gate = target / "scripts" / "gate"
+    assert gate.is_file() and os.access(gate, os.X_OK)
+    assert git("ls-files", "-s", "scripts/gate", cwd=target, env=env).startswith("100755")
 
 
 def test_new_refuses_a_target_that_is_not_empty(template, tmp_path, env):
@@ -400,6 +408,17 @@ def test_update_takes_the_templates_changes_and_commits(template, tmp_path, env)
     assert not (target / "asf" / "README.md").exists()
     assert git("rev-list", "--count", "HEAD", cwd=target, env=env) == "2"
     assert git("status", "--porcelain", cwd=target, env=env) == ""
+
+
+def test_update_gives_an_older_kasten_an_executable_gate(template, tmp_path, env):
+    target = make(template, tmp_path, env)
+    git("rm", "-q", "scripts/gate", cwd=target, env=env)
+    git("commit", "-q", "-m", "a Kasten from before the gate", cwd=target, env=env)
+    (template / "asf" / "LATER.md").write_text("later\n")
+    commit(template, env, "a later template")
+    result = update(template, target, tmp_path, env)
+    assert result.returncode == 0, result.stderr
+    assert git("ls-files", "-s", "scripts/gate", cwd=target, env=env).startswith("100755")
 
 
 def test_update_adds_new_seed_files_and_keeps_the_kastens_own(template, tmp_path, env):

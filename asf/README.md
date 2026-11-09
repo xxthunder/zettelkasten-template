@@ -53,7 +53,8 @@ Kasten goes into its own files in its root — its own `AGENTS.md` imports
   `workspace.dsl`. When only its `lastModifiedDate` changed, discard that change
 - [CONVENTIONS.md](CONVENTIONS.md) — principles, file names, frontmatter, linking, language
 - `templates/` — a template per note type: `learning`, `literature`, `engineering`
-- `scripts/` — `lint.sh`, `review.sh`, `new-zettel.sh`, and `kasten.py`, which makes a new
+- `scripts/` — `gate`, which runs the tests and `lint.sh` and exits 0 only when both are
+  green, `lint.sh`, `review.sh`, `new-zettel.sh`, and `kasten.py`, which makes a new
   Kasten (`new`), sets a machine up for one (`setup`) and updates one (`update`); its tests
   are in `tests/` (`cd asf && uv run --group dev pytest`)
 - `claude/` — the global instructions, the shared part of the user settings (plugins,

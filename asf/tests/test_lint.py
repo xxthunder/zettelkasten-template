@@ -40,6 +40,18 @@ def test_a_folder_with_a_hub_is_an_area(tmp_path):
     assert "Done: 1 errors" in result.stdout
 
 
+def test_lint_exits_non_zero_when_it_finds_errors(tmp_path):
+    hub(tmp_path, "garden", "roses")
+    write(tmp_path / "garden" / "roses.md", "# no frontmatter\n")
+    assert lint(tmp_path).returncode == 1
+
+
+def test_lint_exits_zero_when_it_finds_no_errors(tmp_path):
+    hub(tmp_path, "garden", "roses")
+    write(tmp_path / "garden" / "roses.md", NOTE.format(title="roses", type="garden"))
+    assert lint(tmp_path).returncode == 0
+
+
 def test_a_folder_without_a_hub_is_no_area(tmp_path):
     write(tmp_path / "recipes" / "loose.md", "# no frontmatter\n")
     result = lint(tmp_path)

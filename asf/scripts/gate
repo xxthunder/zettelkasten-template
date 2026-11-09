@@ -1,0 +1,15 @@
+#!/bin/bash
+# The template's part of a Kasten's gate (asf/AGENTS.md → Closed loop): the tests
+# under asf/tests and the lint. Exits 0 only when both are green; both run also
+# when the first is red, so one run shows every failure.
+# Usage: called by scripts/gate in the Kasten root, from any directory.
+
+ASF="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+status=0
+
+echo "--- Tests ---"
+(cd "$ASF" && uv run --group dev pytest -q) || status=1
+echo ""
+(cd "$ASF/.." && bash asf/scripts/lint.sh) || status=1
+
+exit $status

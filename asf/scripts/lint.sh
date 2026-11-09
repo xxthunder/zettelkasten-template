@@ -1,6 +1,7 @@
 #!/bin/bash
 # Lint the Zettelkasten for common issues
-# Usage: asf/scripts/lint.sh (from the Kasten root)
+# Usage: asf/scripts/lint.sh (from the Kasten root). Exits 1 when it finds errors;
+# warnings alone leave it at 0.
 
 set -e
 
@@ -137,3 +138,4 @@ fi
 
 echo ""
 echo "Done: $ERRORS errors, $WARNINGS warnings"
+[ "$ERRORS" -eq 0 ] || exit 1
