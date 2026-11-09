@@ -60,6 +60,9 @@ started in it — test-first and running the test suite before every commit incl
   draft first and posted after a go.
 - **Rules say what to do**: write an agent rule as the action to take; a prohibition, where
   one is needed, comes second.
+- **Separate with a colon, a semicolon, a comma or a plain hyphen** (`-`) in everything you
+  write: prose, code, the output code prints, formats and templates. The em-dash (`—`) is
+  banned. Existing text keeps its em-dashes until it is edited for another reason.
 
 ## Checks
 
