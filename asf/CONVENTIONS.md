@@ -54,7 +54,8 @@ content area has a `README.md` as its hub (see Linking).
   the stable ID that survives a later change of title
 - **Literature notes**: `lit-AUTHOR-YEAR-slug.md` (e.g.
   `lit-ahrens-2017-how-to-take-smart-notes.md`)
-- **Engineering notes**: `slug.md` in `engineering/`
+- **Engineering notes**: `slug.md` in `engineering/`. A note about one dated event (a
+  meeting, a review, a session) is `YYYY-MM-DD-slug.md`, so the file list sorts by date
 - **Inbox notes**: any name; renamed or deleted when processed
 - **Area hub**: `README.md` in its area (no `index.md`)
 
