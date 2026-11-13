@@ -15,7 +15,17 @@ import pytest
 
 from conftest import ASF
 
-pytestmark = pytest.mark.skipif(shutil.which("docker") is None, reason="docker is not installed")
+# Podman first, as in structurizr-local.sh: where both commands exist, docker is most likely
+# podman's alias
+RUNTIME = next((cmd for cmd in ("podman", "docker") if shutil.which(cmd)), None)
+
+pytestmark = pytest.mark.skipif(RUNTIME is None, reason="neither podman nor docker is installed")
+
+# Rootless podman maps the container's --user to a subordinate uid that cannot write the
+# mounted directory; keep-id maps the calling user into the container unchanged
+RUN_AS = (["--userns=keep-id"] if RUNTIME == "podman" else []) + [
+    "--user", f"{os.getuid()}:{os.getgid()}",
+]
 
 IMAGE = "docker.io/structurizr/structurizr:latest"
 
@@ -27,7 +37,7 @@ def workspace(tmp_path_factory) -> dict:
     out = tmp_path_factory.mktemp("structurizr")
     subprocess.run(
         [
-            "docker", "run", "--rm", "--user", f"{os.getuid()}:{os.getgid()}",
+            RUNTIME, "run", "--rm", *RUN_AS,
             "-v", f"{ASF / 'architecture'}:/workspace:ro", "-v", f"{out}:/out",
             IMAGE, "export", "-w", "/workspace/workspace.dsl", "-f", "json", "-o", "/out",
         ],
