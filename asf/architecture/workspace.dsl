@@ -29,7 +29,7 @@ workspace "Agentic Software Forge" "The closed engineering loop, with the Kasten
             }
 
             harness = container "Harness" "Skills, plugins and settings of the Coding Agent." "Claude Code plugins and settings" {
-                devSkills = component "xxthunder-dev-skills" "Skills: closed-loop, backlog-ops, next, logbook, refinement. Scripts: loop.py, backlog.py, board.py, store." "Claude Code plugin" "Plugin"
+                devSkills = component "xxthunder-dev-skills" "Skills: closed-loop, backlog-ops, next, logbook, refinement. Scripts: loop.py, backlog.py, board.py, host.py, store." "Claude Code plugin" "Plugin"
                 superpowers = component "superpowers" "Plans and subagents: writing-plans, subagent-driven-development." "Claude Code plugin" "Plugin"
                 jiraSkill = component "Jira skill" "Reads and writes stories in the issue tracker." "Skill" "Plugin"
                 mcpServers = component "MCP servers" "Further tools for the Coding Agent." "MCP" "Plugin"
@@ -50,7 +50,7 @@ workspace "Agentic Software Forge" "The closed engineering loop, with the Kasten
 
         provisioner = softwareSystem "Provisioner" "Sets up the instance: Ansible, WSL manager." "External"
         llm = softwareSystem "LLM" "Runs the agents, through a provider's API." "External"
-        scm = softwareSystem "SCM" "Remotes, pull requests, checks: GitHub, Gitea …" "External"
+        scm = softwareSystem "SCM" "Remotes, pull requests, checks: GitHub, Gitea, Bitbucket Server." "External"
         ciServer = softwareSystem "CI server" "Optional: checks pull requests, e.g. Jenkins." "External"
         issueTracker = softwareSystem "Issue tracker" "Ranking, planning, user stories, e.g. Jira." "External"
 
@@ -86,6 +86,7 @@ workspace "Agentic Software Forge" "The closed engineering loop, with the Kasten
         asf.harness.devSkills -> asf.kasten.logbook "Writes lines" "store"
         asf.harness.devSkills -> asf.kasten.registry "Resolves repos" "loop.py row"
         asf.harness.devSkills -> asf.checkout "Items, state, guard" "backlog.py, loop.py"
+        asf.harness.devSkills -> scm "Opens or updates PR, waits for checks" "host.py"
 
         # The loop: contracts, gate, rubric
         asf.codingAgent.session -> asf.kasten.contracts "Reads"
@@ -93,7 +94,7 @@ workspace "Agentic Software Forge" "The closed engineering loop, with the Kasten
         asf.codingAgent.session -> asf.kasten.generalRubric "Hands to reviewers"
         asf.codingAgent.session -> asf.checkout "Gate, worktree, commits, fold" "git, loop.py"
         asf.codingAgent.session -> asf.devContainer "Runs the gate"
-        asf.codingAgent.session -> scm "Pushes, opens PR" "git, gh"
+        asf.codingAgent.session -> scm "Pushes" "git"
 
         # The roles of one unit
         asf.codingAgent.session -> asf.codingAgent.tester "N.a, disputes"
@@ -146,9 +147,11 @@ workspace "Agentic Software Forge" "The closed engineering loop, with the Kasten
             asf.codingAgent -> asf.checkout "Units 1..n (see Unit), final review"
             asf.codingAgent -> asf.devContainer "Gate; red: at most 2 fix rounds"
             asf.codingAgent -> asf.checkout "Gate green: fold"
-            asf.codingAgent -> scm "Push, PR"
+            asf.codingAgent -> scm "Push"
+            asf.harness -> scm "PR"
             scm -> ciServer "Optional: runs the checks"
             ciServer -> scm "Optional: reports the checks"
+            asf.harness -> scm "CI as the gate: waits for the checks"
             author -> scm "Reviews, merges"
         }
 
@@ -163,14 +166,6 @@ workspace "Agentic Software Forge" "The closed engineering loop, with the Kasten
             asf.codingAgent.taskReviewer -> asf.codingAgent.session "Findings"
             asf.codingAgent.session -> asf.codingAgent.implementer "Fix round"
             asf.codingAgent.implementer -> asf.checkout "Commits the fix"
-        }
-
-        dynamic asf.codingAgent "Dispute" "The implementer holds a test wrong. At most two exchanges, then a stop." {
-            asf.codingAgent.implementer -> asf.codingAgent.session "Disputes a test"
-            asf.codingAgent.session -> asf.codingAgent.tester "Hands it to a fresh tester"
-            asf.codingAgent.tester -> asf.checkout "Fixes the test, or not"
-            asf.codingAgent.tester -> asf.codingAgent.session "Fixed, or rejected with a reason"
-            asf.codingAgent.session -> asf.codingAgent.implementer "Runs again"
         }
 
         styles {

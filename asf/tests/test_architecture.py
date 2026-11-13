@@ -119,6 +119,38 @@ def test_the_harness_holds_the_plugins(workspace):
     description = find(parts, "xxthunder-dev-skills", "component of the Harness")["description"]
     assert "closed-loop" in description
     assert "loop.py" in description
+    assert "host.py" in description
+
+
+def edges_into(ws: dict, target: str) -> list[dict]:
+    label = element_names(ws)
+    return [
+        dict(r, source=label[r["sourceId"]])
+        for r in all_relationships(ws).values()
+        if label[r["destinationId"]] == target
+    ]
+
+
+def test_the_plugin_opens_the_pull_request_and_waits_for_checks_through_host_py(workspace):
+    edges = edges_into(workspace, "SCM")
+    from_plugin = [e for e in edges if e["source"] == "xxthunder-dev-skills"]
+    assert any("host.py" in e.get("technology", "") for e in from_plugin), from_plugin
+    assert any("checks" in e["description"] for e in from_plugin), from_plugin
+    assert any("PR" in e["description"] for e in from_plugin), from_plugin
+    sessions = [e for e in edges if e["source"] == "Session"]
+    assert sessions and all("PR" not in e["description"] for e in sessions), sessions
+
+
+def test_no_edge_into_the_scm_names_gh(workspace):
+    for edge in edges_into(workspace, "SCM"):
+        words = f"{edge['description']} {edge.get('technology', '')}".replace(",", " ").split()
+        assert "gh" not in words, edge
+
+
+def test_the_scm_names_the_hosts_host_py_serves(workspace):
+    description = find(systems(workspace), "SCM", "software system")["description"]
+    for host in ("GitHub", "Gitea", "Bitbucket Server"):
+        assert host in description, host
 
 
 def test_the_kasten_holds_contracts_board_log_rubric_and_registry(workspace):
@@ -135,7 +167,7 @@ def test_the_views_are_the_c4_cut(workspace):
     assert set(component_views) == {"CodingAgent", "Harness", "Kasten"}
     for key, container_name in {"CodingAgent": "Coding Agent", "Harness": "Harness", "Kasten": "Kasten"}.items():
         assert component_views[key]["containerId"] == container(workspace, container_name)["id"], key
-    assert set(v["key"] for v in views.get("dynamicViews", [])) == {"Loop", "Unit", "Dispute"}
+    assert set(v["key"] for v in views.get("dynamicViews", [])) == {"Loop", "Unit"}
 
 
 def dynamic_view(ws: dict, key: str) -> dict:
@@ -150,6 +182,23 @@ def roles_in(ws: dict, view: dict) -> set[str]:
 def test_the_loop_follows_one_item_at_container_level(workspace):
     loop = dynamic_view(workspace, "Loop")
     assert loop["elementId"] == asf(workspace)["id"]
+
+
+def test_the_loop_opens_its_pull_request_through_host_py_and_waits_for_checks(workspace):
+    loop = dynamic_view(workspace, "Loop")
+    relationships = all_relationships(workspace)
+    label = element_names(workspace)
+    to_scm = [
+        (label[relationships[step["id"]]["sourceId"]], step["description"],
+         relationships[step["id"]].get("technology", ""))
+        for step in loop["relationships"]
+        if label[relationships[step["id"]]["destinationId"]] == "SCM"
+    ]
+    through_host = [(text, tech) for source, text, tech in to_scm if source == "Harness"]
+    assert any("PR" in text and "host.py" in tech for text, tech in through_host), to_scm
+    assert any("waits for the checks" in text and "host.py" in tech for text, tech in through_host), to_scm
+    from_agent = [text for source, text, _ in to_scm if source == "Coding Agent"]
+    assert from_agent and all("PR" not in t and "checks" not in t for t in from_agent), to_scm
 
 
 def test_the_stop_is_an_edge_from_the_session_to_the_author(workspace):
@@ -169,7 +218,11 @@ def test_the_unit_follows_the_main_path_through_the_roles(workspace):
     assert {"Session", "Tester", "Implementer", "Task reviewer"} <= roles_in(workspace, unit)
 
 
-def test_the_dispute_goes_from_the_implementer_to_a_fresh_tester(workspace):
-    dispute = dynamic_view(workspace, "Dispute")
-    assert dispute["elementId"] == container(workspace, "Coding Agent")["id"]
-    assert {"Session", "Tester", "Implementer"} <= roles_in(workspace, dispute)
+def test_the_dispute_shows_as_edges_between_the_roles(workspace):
+    label = element_names(workspace)
+    edges = {
+        (label[r["sourceId"]], label[r["destinationId"]]): r["description"]
+        for r in all_relationships(workspace).values()
+    }
+    assert "disputes" in edges[("Implementer", "Session")]
+    assert "disputes" in edges[("Session", "Tester")]
