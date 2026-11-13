@@ -267,7 +267,7 @@ comparisons — are written only when the author asks for one.
 - **YAML frontmatter** with at least `title`, `created`, `tags`, `type: engineering`
 - **Plain slug file names**: `proxmox-dhcp-instead-of-static-for-dns.md`. A note about one
   dated event (a meeting, a review, a session) starts with its date, so the file list sorts
-  by it: `2026-11-04-refinement-jedai-rebels.md`
+  by it: `2026-11-04-team-refinement.md`
 - **Hub back-link** as a relative link: `[← Engineering](README.md)`
 - Template: `asf/templates/engineering.md`
 
