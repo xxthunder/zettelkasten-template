@@ -26,9 +26,9 @@ worktree on a feature branch → close the item — its card leaves the board �
 Every step is a skill, and every step writes into a repo, never into a chat. The log is
 optional; the board works without it.
 
-Inside the worktree the work runs as a **closed loop**: an implementer subagent writes the
-test and the code for each task, a reviewer subagent judges the diff against the
-repository's rubric, and the loop ends only when the repository's gate is green — the
+Inside the worktree the work runs as a **closed loop**: a tester subagent writes the
+failing tests and an implementer subagent makes them pass, for each task, reviewer
+subagents judge the diff against the general and the repository's rubric, and the loop ends only when the repository's gate is green - the
 gate it names, often `scripts/gate`, or else the one derived from its CI. The author confirms an evidence package in the pull request
 instead of reading the diff. The contract is `Closed loop` in [AGENTS.md](AGENTS.md); the
 architecture is a Structurizr workspace in

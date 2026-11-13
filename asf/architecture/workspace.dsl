@@ -1,10 +1,13 @@
 /*
- * The Agentic Software Forge (ASF): how one backlog item runs through the closed loop,
- * from its card on the board to an evidence package the author confirms.
+ * The Agentic Software Forge (ASF): one OS instance with everything on it, and how one
+ * backlog item runs through the closed loop on it, from the author's request to the merge.
+ * Cut after C4: the context, the containers of the instance, the components of the
+ * Coding Agent, the Harness and the Kasten, and two dynamic views, Loop and Unit.
  *
  * Generic on purpose: this file belongs to the template, so it names roles
- * ("target repository"), not one Kasten's repositories. Elements tagged "Planned"
- * do not exist yet; the backlog item that builds them is named in their description.
+ * ("Repository checkout"), not one Kasten's repositories or hosts. Every element exists
+ * today: the model shows the closed loop as the shipped closed-loop skill runs it, not a
+ * plan, so no element is tagged "Planned".
  *
  * Validated by asf/scripts/lint.sh. Render it with Structurizr, e.g.
  *   docker run --rm -p 8080:8080 -v "$PWD/asf/architecture:/usr/local/structurizr" structurizr/structurizr local
@@ -14,129 +17,160 @@ workspace "Agentic Software Forge" "The closed engineering loop, with the Kasten
     !identifiers hierarchical
 
     model {
-        author = person "Author" "Ranks the work, pulls an item, confirms the evidence package, merges."
+        author = person "Author" "Plans and assigns the work; decides, judges, merges."
 
-        asf = softwareSystem "Agentic Software Forge" "The author's way of building software with AI agents: the same workflow on every machine." {
-            kasten = container "Kasten" "Knowledge repository and root of the work: contracts, board, log, learnings." "Git repository" "Repository" {
-                contracts = component "Contracts" "asf/AGENTS.md: Board, Logbook, Learnings and Closed loop — gate, rubric and the sections of the evidence package." "Markdown"
-                board = component "Board" "engineering/board.md: Next and In Progress across all repositories." "Markdown"
-                logbook = component "Logbook" "engineering/log.md: started, note, done — one line per event." "Markdown"
-                generalRubric = component "General rubric" "asf/rubric.md: what a reviewer judges in every repository — prior art first, mechanical work is code, rules say what to do, simplicity, test first, the record stays true, nothing private leaves its place." "Markdown"
-                registry = component "Repository registry" "engineering/repos.md: repository name → remote, ID prefix; a gate the author corrects." "Markdown"
+        asf = softwareSystem "Agentic Software Forge" "One OS instance: VM, WSL distribution or container." {
+            codingAgent = container "Coding Agent" "Works the item, in several roles." "e.g. Claude Code" "Agent" {
+                session = component "Session" "Drives the item through the loop; stops for the author." "Claude Code session" "Agent"
+                tester = component "Tester" "Writes the failing tests of a unit." "subagent, superpowers prompt" "Agent"
+                implementer = component "Implementer" "Makes the tests pass; changes no test." "subagent, superpowers prompt" "Agent"
+                taskReviewer = component "Task reviewer" "Reviews one unit against both rubrics." "subagent, superpowers prompt" "Agent"
+                finalReviewer = component "Final reviewer" "Reviews the whole branch." "subagent, superpowers prompt" "Agent"
             }
 
-            session = container "Claude Code session" "The controller: works one item through the loop in the target repository's worktree." "Claude Code" "Agent"
-
-            devSkills = container "xxthunder-dev-skills" "The plugin that works the Kasten structure and the backlogs." "Claude Code plugin" "Plugin" {
-                backlogOps = component "backlog-ops" "Pulls, ticks and closes an item; moves its card." "Skill"
-                next = component "next" "Shows the board; puts and drops cards." "Skill"
-                logbookSkill = component "logbook" "Writes started, note and done lines." "Skill"
-                refinement = component "refinement" "Creates items through backlog.py new." "Skill"
-                loopDriver = component "Loop driver" "Finds the target repository's gate — named by it, corrected in the registry, or derived from its CI — and its rubric, hands the rubric to the reviewers, ends the loop on a green gate, writes the evidence package (XAS-055)." "Skill" "Planned"
-                backlogScript = component "backlog.py" "Every mechanical backlog step: new, set-status, toc, show, check." "Python"
-                storeScript = component "store" "Resolves a store, reads a contract, commits and pushes one file." "Shell"
+            harness = container "Harness" "Skills, plugins and settings of the Coding Agent." "Claude Code plugins and settings" {
+                devSkills = component "xxthunder-dev-skills" "Skills: closed-loop, backlog-ops, next, logbook, refinement. Scripts: loop.py, backlog.py, board.py, store." "Claude Code plugin" "Plugin"
+                superpowers = component "superpowers" "Plans and subagents: writing-plans, subagent-driven-development." "Claude Code plugin" "Plugin"
+                jiraSkill = component "Jira skill" "Reads and writes stories in the issue tracker." "Skill" "Plugin"
+                mcpServers = component "MCP servers" "Further tools for the Coding Agent." "MCP" "Plugin"
             }
 
-            implementer = container "Implementer subagent" "Writes the test, then the code, for one task; commits." "general-purpose subagent, superpowers prompt" "Agent"
-            taskReviewer = container "Task reviewer subagent" "Reads one task's diff against the task and the target repository's rubric; reports findings." "general-purpose subagent, superpowers prompt" "Agent"
-            finalReviewer = container "Final reviewer subagent" "Reads the whole branch once all tasks are done." "general-purpose subagent, superpowers prompt" "Agent"
+            kasten = container "Kasten" "Contracts, board, log, learnings." "Git repository" "Repository" {
+                contracts = component "Contracts" "asf/AGENTS.md: what the skills follow." "Markdown"
+                board = component "Board" "engineering/board.md: Next and In Progress." "Markdown"
+                logbook = component "Logbook" "engineering/log.md: one line per event." "Markdown"
+                generalRubric = component "General rubric" "asf/rubric.md: what every review judges." "Markdown"
+                registry = component "Repository registry" "engineering/repos.md: remotes, ID prefixes, gate corrections." "Markdown"
+            }
+
+            checkout = container "Repository checkout" "Clone of the target repository with its feature worktree." "Git repository" "Repository"
+
+            devContainer = container "Dev container" "Runs the repository's commands, where it has one." "Dev container"
         }
 
-        superpowers = softwareSystem "superpowers" "Third-party plugin: writing-plans, subagent-driven-development, finishing-a-development-branch, and the prompt templates for implementer and reviewers. Adopted, not rebuilt (ADR-0013 of xxthunder-agentic-skills)." "External"
-
-        target = softwareSystem "Target repository" "Any repository on the board, the author's or someone else's. Its gate is the one it names or the one its CI implies." "Repository" {
-            agentsMd = container "AGENTS.md" "The repository's rules; an optional section Closed loop names the gate, the rubric and where the gate runs." "Markdown"
-            backlog = container "Backlog" "docs/backlog/: one file per item; the item is the design document of its change." "Markdown"
-            worktree = container "Feature worktree" "A feature branch in its own worktree, one per item." "Git worktree"
-            ci = container "CI definition" "pypeline.yaml, .github/workflows/, .gitea/workflows/ or a Jenkinsfile: the checks a pull request must pass." "YAML, Groovy"
-            gate = container "Gate" "The command that runs every deterministic check — tests, lint, Molecule, behavioural evals — and exits 0 only when all are green: the one the repository names, often scripts/gate, or the one derived from its CI." "Command"
-            rubric = container "Rubric" "docs/rubric.md, else CONTRIBUTING.md: what the reviewers judge in this repository's changes — only what needs judgment." "Markdown" "Planned"
-        }
-
-        forge = softwareSystem "Forge" "GitHub, Gitea or Jenkins: the pull request carries the evidence package; CI runs the checks again, and is the gate where they cannot run locally." "External"
+        provisioner = softwareSystem "Provisioner" "Sets up the instance: Ansible, WSL manager." "External"
+        llm = softwareSystem "LLM" "Runs the agents, through a provider's API." "External"
+        scm = softwareSystem "SCM" "Remotes, pull requests, checks: GitHub, Gitea …" "External"
+        ciServer = softwareSystem "CI server" "Optional: checks pull requests, e.g. Jenkins." "External"
+        issueTracker = softwareSystem "Issue tracker" "Ranking, planning, user stories, e.g. Jira." "External"
 
         # Context
-        author -> asf "Pulls items, confirms evidence"
-        author -> forge "Reads the evidence package, merges"
-        asf -> target "Changes, through a feature branch"
-        asf -> superpowers "Runs the loop with"
-        asf -> forge "Opens the pull request with the evidence package"
+        author -> asf "Assigns work, decides"
+        author -> scm "Reviews, merges"
+        author -> issueTracker "Plans stories"
+        provisioner -> asf "Sets up"
+        scm -> ciServer "Runs checks"
+        ciServer -> scm "Reports checks"
 
-        # The author and the board
-        author -> asf.kasten.board "Ranks the cards" "next put"
-        author -> asf.session "Pulls an item, answers questions" "chat"
+        # The instance
+        provisioner -> asf.codingAgent "Installs"
+        provisioner -> asf.harness "Installs"
+        asf.codingAgent -> llm "Runs on" "API"
+        asf.devContainer -> asf.checkout "Mounts"
 
-        # The session uses both plugins
-        asf.session -> asf.devSkills "Invokes skills"
-        asf.session -> superpowers "Plans the item, runs subagent-driven-development"
+        # The author and the session
+        author -> asf.codingAgent.session "Starts, answers" "chat"
+        author -> asf.kasten.board "Ranks cards" "next put"
+        asf.codingAgent.session -> author "Stop: the author decides; Q&A"
 
-        # Mechanics through scripts
-        asf.devSkills.backlogOps -> asf.devSkills.backlogScript "Sets the status"
-        asf.devSkills.refinement -> asf.devSkills.backlogScript "Creates the item"
-        asf.devSkills.backlogScript -> target.backlog "Reads and writes items"
-        asf.devSkills.backlogOps -> asf.devSkills.storeScript "Moves the card"
-        asf.devSkills.next -> asf.devSkills.storeScript "Puts and drops cards"
-        asf.devSkills.logbookSkill -> asf.devSkills.storeScript "Writes a log line"
-        asf.devSkills.storeScript -> asf.kasten.contracts "Reads a contract"
-        asf.devSkills.storeScript -> asf.kasten.board "Commits the board"
-        asf.devSkills.storeScript -> asf.kasten.logbook "Commits the log"
-        asf.devSkills.next -> asf.kasten.registry "Resolves a repository"
+        # The session uses the Harness
+        asf.codingAgent.session -> asf.harness.devSkills "Skills, guard" "uv run"
+        asf.codingAgent.session -> asf.harness.superpowers "Plans, dispatches"
+        asf.codingAgent.session -> asf.harness.jiraSkill "Uses"
+        asf.codingAgent.session -> asf.harness.mcpServers "Calls" "MCP"
+        asf.harness.jiraSkill -> issueTracker "Reads, writes stories"
 
-        # The loop
-        asf.devSkills.loopDriver -> asf.kasten.contracts "Reads the Closed loop contract"
-        asf.devSkills.loopDriver -> target.agentsMd "Reads where the gate and the rubric are"
-        asf.devSkills.loopDriver -> asf.kasten.registry "Reads a gate correction"
-        asf.devSkills.loopDriver -> target.ci "Derives the gate from, when the repository names none"
-        asf.devSkills.loopDriver -> asf.kasten.generalRubric "Hands it to the reviewers as global constraints"
-        asf.devSkills.loopDriver -> target.rubric "Hands it to the reviewers as global constraints"
-        asf.devSkills.loopDriver -> target.gate "Runs it; the loop ends only when it is green"
-        asf.devSkills.loopDriver -> forge "Waits for green CI checks, where the CI is the gate"
-        asf.devSkills.loopDriver -> forge "Writes the evidence package into the pull request"
-        asf.session -> asf.implementer "Dispatches, one task at a time"
-        asf.session -> asf.taskReviewer "Dispatches after each task, with the rubric"
-        asf.session -> asf.finalReviewer "Dispatches once, for the whole branch"
-        asf.implementer -> target.worktree "Commits, test first"
-        asf.implementer -> target.gate "Runs the tests of its task"
-        asf.taskReviewer -> target.rubric "Judges the diff against"
-        asf.taskReviewer -> asf.kasten.generalRubric "Judges the diff against"
-        asf.taskReviewer -> target.worktree "Reads the diff"
-        asf.finalReviewer -> target.worktree "Reads the branch"
-        asf.session -> target.gate "Runs before the loop ends"
-        asf.session -> forge "Opens the pull request"
-        target.worktree -> forge "Pushed to"
+        # Mechanics through the plugin's scripts
+        asf.harness.devSkills -> asf.kasten.contracts "Reads" "store"
+        asf.harness.devSkills -> asf.kasten.board "Moves cards" "store"
+        asf.harness.devSkills -> asf.kasten.logbook "Writes lines" "store"
+        asf.harness.devSkills -> asf.kasten.registry "Resolves repos" "loop.py row"
+        asf.harness.devSkills -> asf.checkout "Items, state, guard" "backlog.py, loop.py"
+
+        # The loop: contracts, gate, rubric
+        asf.codingAgent.session -> asf.kasten.contracts "Reads"
+        asf.codingAgent.session -> asf.kasten.registry "Reads"
+        asf.codingAgent.session -> asf.kasten.generalRubric "Hands to reviewers"
+        asf.codingAgent.session -> asf.checkout "Gate, worktree, commits, fold" "git, loop.py"
+        asf.codingAgent.session -> asf.devContainer "Runs the gate"
+        asf.codingAgent.session -> scm "Pushes, opens PR" "git, gh"
+
+        # The roles of one unit
+        asf.codingAgent.session -> asf.codingAgent.tester "N.a, disputes"
+        asf.codingAgent.session -> asf.codingAgent.implementer "N.b, fix rounds"
+        asf.codingAgent.session -> asf.codingAgent.taskReviewer "Per unit"
+        asf.codingAgent.session -> asf.codingAgent.finalReviewer "Once, at the end"
+        asf.codingAgent.tester -> asf.codingAgent.session "Reports, answers"
+        asf.codingAgent.implementer -> asf.codingAgent.session "Reports, disputes"
+        asf.codingAgent.tester -> asf.checkout "Commits tests" "git"
+        asf.codingAgent.implementer -> asf.checkout "Commits fixes" "loop.py fixup"
+        asf.codingAgent.tester -> asf.devContainer "Runs tests"
+        asf.codingAgent.implementer -> asf.devContainer "Runs tests"
+        asf.codingAgent.taskReviewer -> asf.checkout "Reads diff" "git"
+        asf.codingAgent.taskReviewer -> asf.codingAgent.session "Reports findings"
+        asf.codingAgent.finalReviewer -> asf.checkout "Reads branch" "git"
+        asf.codingAgent.finalReviewer -> asf.codingAgent.session "Reports findings"
     }
 
     views {
-        systemContext asf "Context" "Who and what the Agentic Software Forge works with." {
+        systemContext asf "Context" "The Agentic Software Forge as one OS instance, and who and what it works with." {
+            include *
+            include ciServer
+        }
+
+        container asf "Containers" "The containers of the instance." {
+            include *
+            include ciServer
+        }
+
+        component asf.codingAgent "CodingAgent" "The roles the Coding Agent runs in: roles of one process." {
             include *
         }
 
-        container asf "Containers" "The parts of the forge and the target repository they change." {
+        component asf.harness "Harness" "The plugins of the Harness; their skills and scripts are named in their descriptions." {
             include *
         }
 
-        container target "TargetRepository" "What a repository supplies to the loop, and who uses it." {
+        component asf.kasten "Kasten" "What the loop reads and writes in the Kasten." {
             include *
         }
 
-        component asf.devSkills "Plugin" "The skills of xxthunder-dev-skills and the scripts that do their mechanical steps." {
-            include *
+        dynamic asf "Loop" "One item, from the author's request to the merge. A stop can come at any step: see the Stop edge in Containers." {
+            author -> asf.codingAgent "Start the loop for an item"
+            asf.codingAgent -> asf.kasten "Reads contracts, registry, general rubric"
+            asf.codingAgent -> asf.checkout "Finds the gate and rubric"
+            asf.codingAgent -> asf.harness "Pulls the item"
+            asf.codingAgent -> author "Optional: Q&A on the plan"
+            author -> asf.codingAgent "Optional: answers, into Scope Decisions"
+            asf.codingAgent -> asf.checkout "Worktree and plan"
+            asf.codingAgent -> asf.checkout "Units 1..n (see Unit), final review"
+            asf.codingAgent -> asf.devContainer "Gate; red: at most 2 fix rounds"
+            asf.codingAgent -> asf.checkout "Gate green: fold"
+            asf.codingAgent -> scm "Push, PR"
+            scm -> ciServer "Optional: runs the checks"
+            ciServer -> scm "Optional: reports the checks"
+            author -> scm "Reviews, merges"
         }
 
-        dynamic asf "Loop" "One item, from its card to the merge." {
-            author -> asf.session "Pulls the item from the board"
-            asf.session -> asf.devSkills "backlog-ops: In Progress, card to In Progress, log line"
-            asf.session -> superpowers "writing-plans: the item becomes a plan of tasks"
-            asf.session -> asf.implementer "Task n: write the test, then the code"
-            asf.implementer -> target.worktree "Commits the task"
-            asf.session -> asf.taskReviewer "Review task n against the task and the rubric"
-            asf.taskReviewer -> asf.kasten "Judges the diff against the general rubric"
-            asf.taskReviewer -> target.rubric "Judges the diff against the repository's rubric"
-            asf.session -> asf.implementer "Fix round, until approved (at most five)"
-            asf.session -> asf.finalReviewer "Review the whole branch"
-            asf.session -> target.gate "Run the gate — or wait for the CI where it is the gate; a red gate sends the work back into a fix round"
-            asf.session -> forge "Open the pull request with the evidence package"
-            author -> forge "Confirms the evidence, merges"
+        dynamic asf.codingAgent "Unit" "One unit N of the plan, on its main path." {
+            asf.codingAgent.session -> asf.codingAgent.tester "N.a: write failing tests"
+            asf.codingAgent.tester -> asf.checkout "Commits the tests"
+            asf.codingAgent.session -> asf.codingAgent.implementer "N.b: make them pass"
+            asf.codingAgent.implementer -> asf.codingAgent.session "Staged, with message"
+            asf.codingAgent.session -> asf.checkout "Commits the code"
+            asf.codingAgent.session -> asf.harness "Guard"
+            asf.codingAgent.session -> asf.codingAgent.taskReviewer "Review unit N"
+            asf.codingAgent.taskReviewer -> asf.codingAgent.session "Findings"
+            asf.codingAgent.session -> asf.codingAgent.implementer "Fix round"
+            asf.codingAgent.implementer -> asf.checkout "Commits the fix"
+        }
+
+        dynamic asf.codingAgent "Dispute" "The implementer holds a test wrong. At most two exchanges, then a stop." {
+            asf.codingAgent.implementer -> asf.codingAgent.session "Disputes a test"
+            asf.codingAgent.session -> asf.codingAgent.tester "Hands it to a fresh tester"
+            asf.codingAgent.tester -> asf.checkout "Fixes the test, or not"
+            asf.codingAgent.tester -> asf.codingAgent.session "Fixed, or rejected with a reason"
+            asf.codingAgent.session -> asf.codingAgent.implementer "Runs again"
         }
 
         styles {
@@ -169,10 +203,6 @@ workspace "Agentic Software Forge" "The closed engineering loop, with the Kasten
             }
             element "Plugin" {
                 shape Component
-            }
-            element "Planned" {
-                border dashed
-                opacity 60
             }
         }
     }

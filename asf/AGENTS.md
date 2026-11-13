@@ -186,10 +186,17 @@ repository — named by it, or derived from its CI. The architecture is in
 and nothing else about this repository; keep it complete.
 
 - **The loop**: the item becomes a plan of tasks (`superpowers:writing-plans`);
-  `superpowers:subagent-driven-development` runs it — an implementer subagent per task,
-  test first, a reviewer subagent after each task, fix rounds, a final reviewer for the
-  whole branch. Nothing of that is rebuilt; this contract adds the gate, the rubric and
-  the evidence package.
+  `superpowers:subagent-driven-development` runs it: an implementer subagent per task, a
+  reviewer subagent after each task, fix rounds, a final reviewer for the whole branch.
+  Nothing of that is rebuilt; this contract adds the gate, the rubric, the evidence package
+  and the protection of the tests:
+  - each task with behaviour to test is split in two: a tester writes the failing tests from
+    the task and the acceptance criteria, then an implementer makes them pass and changes no
+    test;
+  - after each implementer task and each fix round at the gate, the implementer's changes to tests, the gate script and CI
+    files are undone;
+  - an implementer that disputes a test hands it back, and a fresh tester decides; at most
+    two exchanges.
 - **Gate**: the command that runs every deterministic check of the target repository —
   tests, lint, evals, Molecule, whatever it has — and exits 0 only when all are green. The
   repository decides what green means, not the loop: its own gate, or its CI. The first of
@@ -226,9 +233,13 @@ and nothing else about this repository; keep it complete.
 - **No CI and no gate, no loop**: a repository that names no gate and has no CI does not
   take part. The skill says so and stops; a loop that ends on a reviewer's approval alone
   ends on a model's judgment.
-- **The end**: the loop ends when the gate exits 0 after the final review — or, where the
-  CI is the gate, when the pull request's CI checks are green — never on a reviewer's
-  approval alone. A red gate sends the work back into a fix round.
+- **The end**: the loop ends when the gate exits 0 after the final review, or, where the
+  CI is the gate, when the pull request's CI checks are green; never on a reviewer's
+  approval alone. A red gate sends the work into a fix round, at most two; a gate still red
+  after them is the author's decision. Where the loop cannot decide alone, it stops and asks
+  the author, for example on a red gate after the fix rounds, a dispute the exchanges did
+  not settle, a question of scope, or a pull request it cannot open; the skill names every
+  stop.
 - **Evidence package**: the body of the pull request, for now — the pull request stays so
   the loop can be evaluated as a whole. Its sections, in this order:
   - **Item** — the item's ID, title and link.
