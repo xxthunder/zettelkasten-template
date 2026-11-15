@@ -73,3 +73,13 @@ private Kasten in a public repository? A finding is any such line in a repositor
 readers should not see it.
 
 **Severity**: Critical.
+
+## 8. A script without tests has run
+
+Does every script the change exempts from automated tests (deploy, UAT, install) come with a
+run of each of its paths in the nearest environment, with the commands that touch the machine
+stubbed out, shown in the evidence package? Do paths and tools on the author's machines come
+from the repository that provisions them, not from a vendor's default location? A finding is
+such a script with a path that never ran, or a path with no source.
+
+**Severity**: Important.
