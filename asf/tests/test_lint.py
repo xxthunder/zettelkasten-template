@@ -30,7 +30,7 @@ def hub(kasten: Path, area: str, *notes: str) -> None:
 
 
 def lint(kasten: Path) -> subprocess.CompletedProcess:
-    return subprocess.run(["bash", str(LINT)], cwd=str(kasten), capture_output=True, text=True, encoding="utf-8")
+    return subprocess.run([shutil.which("bash"), str(LINT)], cwd=str(kasten), capture_output=True, text=True, encoding="utf-8")
 
 
 def test_a_folder_with_a_hub_is_an_area(tmp_path):
@@ -88,7 +88,7 @@ def test_the_tag_report_lists_the_tags(tmp_path):
     write(tmp_path / "garden" / "roses.md",
           NOTE.format(title="roses", type="garden").replace("tags: [test]", "tags: [alpha, beta]"))
     env = {k: v for k, v in os.environ.items() if k not in ("LC_ALL", "LANG", "LC_CTYPE")}
-    result = subprocess.run(["bash", str(LINT)], cwd=str(tmp_path), capture_output=True, text=True,
+    result = subprocess.run([shutil.which("bash"), str(LINT)], cwd=str(tmp_path), capture_output=True, text=True,
                             encoding="utf-8", env=env)
     report = result.stdout.split("--- Tag Report ---", 1)[1]
     assert "alpha" in report
