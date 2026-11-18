@@ -6,13 +6,14 @@ without a list of areas in it.
 """
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
 
-from conftest import ASF
+from conftest import ASF, WINDOWS
 
 LINT = ASF / "scripts" / "lint.sh"
 NOTE = "---\ntitle: \"{title}\"\ncreated: 2026-01-01\ntags: [test]\ntype: {type}\n---\n\n# {title}\n\n[← Hub](README.md)\n\nBody.\n"
@@ -20,7 +21,7 @@ NOTE = "---\ntitle: \"{title}\"\ncreated: 2026-01-01\ntags: [test]\ntype: {type}
 
 def write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text)
+    path.write_text(text, encoding="utf-8", newline="\n")
 
 
 def hub(kasten: Path, area: str, *notes: str) -> None:
@@ -29,7 +30,7 @@ def hub(kasten: Path, area: str, *notes: str) -> None:
 
 
 def lint(kasten: Path) -> subprocess.CompletedProcess:
-    return subprocess.run(["bash", str(LINT)], cwd=str(kasten), capture_output=True, text=True)
+    return subprocess.run(["bash", str(LINT)], cwd=str(kasten), capture_output=True, text=True, encoding="utf-8")
 
 
 def test_a_folder_with_a_hub_is_an_area(tmp_path):
@@ -81,10 +82,24 @@ def test_a_broken_link_in_a_found_area_is_reported(tmp_path):
     assert "Broken link in learnings/claim.md → gone.md" in result.stdout
 
 
+def test_the_tag_report_lists_the_tags(tmp_path):
+    """grep -P needs a UTF-8 locale; Git Bash has none unless the script sets one."""
+    hub(tmp_path, "garden", "roses")
+    write(tmp_path / "garden" / "roses.md",
+          NOTE.format(title="roses", type="garden").replace("tags: [test]", "tags: [alpha, beta]"))
+    env = {k: v for k, v in os.environ.items() if k not in ("LC_ALL", "LANG", "LC_CTYPE")}
+    result = subprocess.run(["bash", str(LINT)], cwd=str(tmp_path), capture_output=True, text=True,
+                            encoding="utf-8", env=env)
+    report = result.stdout.split("--- Tag Report ---", 1)[1]
+    assert "alpha" in report
+    assert "beta" in report
+
+
 # ---------- architecture: the Structurizr workspace is validated ----------
 
 VALID_DSL = 'workspace "T" {\n    model {\n        a = person "A"\n    }\n    views {\n        systemLandscape {\n            include *\n        }\n    }\n}\n'
 needs_docker = pytest.mark.skipif(shutil.which("docker") is None, reason="docker is not installed")
+linux_only = pytest.mark.skipif(WINDOWS, reason="the architecture check runs on Linux only (ZKK-023)")
 
 
 def no_docker_path(tmp_path: Path) -> str:
@@ -94,11 +109,18 @@ def no_docker_path(tmp_path: Path) -> str:
     for tool in ("bash", "head", "grep", "find", "sort", "sed", "wc", "tr", "xargs", "uniq", "basename", "dirname", "cat"):
         found = shutil.which(tool)
         if found:
-            (bin_dir / tool).symlink_to(found)
+            if WINDOWS:
+                # Symlinks need a privilege on Windows; a wrapper script does the same job
+                wrapper = bin_dir / tool
+                wrapper.write_text(f'#!/bin/sh\nexec "{Path(found).as_posix()}" "$@"\n',
+                                   encoding="utf-8", newline="\n")
+            else:
+                (bin_dir / tool).symlink_to(found)
     return str(bin_dir)
 
 
 @needs_docker
+@linux_only
 def test_a_valid_workspace_passes(tmp_path):
     write(tmp_path / "asf" / "architecture" / "workspace.dsl", VALID_DSL)
     result = lint(tmp_path)
@@ -107,6 +129,7 @@ def test_a_valid_workspace_passes(tmp_path):
 
 
 @needs_docker
+@linux_only
 def test_an_invalid_workspace_is_an_error(tmp_path):
     write(tmp_path / "asf" / "architecture" / "workspace.dsl", VALID_DSL.replace("person", "persn"))
     result = lint(tmp_path)
@@ -122,20 +145,38 @@ def test_a_kasten_without_a_workspace_skips_the_check(tmp_path):
 
 def test_without_docker_the_check_is_a_warning_not_an_error(tmp_path):
     write(tmp_path / "asf" / "architecture" / "workspace.dsl", VALID_DSL)
-    result = subprocess.run([shutil.which("bash"), str(LINT)], cwd=str(tmp_path), capture_output=True, text=True,
+    result = subprocess.run([shutil.which("bash"), str(LINT)], cwd=str(tmp_path), capture_output=True, text=True, encoding="utf-8",
                             env={"PATH": no_docker_path(tmp_path)})
-    assert "Architecture not validated: docker is not installed" in result.stdout
+    # On Windows the Linux-only warning comes first, whatever is on PATH (ZKK-023)
+    expected = "the check runs on Linux only" if WINDOWS else "docker is not installed"
+    assert f"Architecture not validated: {expected}" in result.stdout
     assert "Done: 0 errors, 1 warnings" in result.stdout
 
 
+@linux_only
 def test_the_default_image_names_its_registry(tmp_path):
     """Podman resolves no short image names unless the machine configures a registry."""
     write(tmp_path / "asf" / "architecture" / "workspace.dsl", VALID_DSL)
     path = no_docker_path(tmp_path)
     called = tmp_path / "docker-args"
     docker = Path(path) / "docker"
-    docker.write_text(f'#!{shutil.which("bash")}\necho "$@" > {called}\n')
+    docker.write_text(f'#!{Path(shutil.which("bash")).as_posix()}\necho "$@" > {called.as_posix()}\n', encoding="utf-8", newline="\n")
     docker.chmod(0o755)
-    subprocess.run([shutil.which("bash"), str(LINT)], cwd=str(tmp_path), capture_output=True, text=True,
+    subprocess.run([shutil.which("bash"), str(LINT)], cwd=str(tmp_path), capture_output=True, text=True, encoding="utf-8",
                    env={"PATH": path})
-    assert " docker.io/structurizr/structurizr:latest " in called.read_text()
+    assert " docker.io/structurizr/structurizr:latest " in called.read_text(encoding="utf-8")
+
+
+@pytest.mark.skipif(not WINDOWS, reason="the architecture check is skipped on Windows only (ZKK-023)")
+def test_on_windows_the_architecture_check_is_skipped(tmp_path):
+    write(tmp_path / "asf" / "architecture" / "workspace.dsl", VALID_DSL)
+    path = no_docker_path(tmp_path)
+    docker = Path(path) / "docker"
+    docker.write_text(f'#!{Path(shutil.which("bash")).as_posix()}\nexit 0\n', encoding="utf-8", newline="\n")
+    docker.chmod(0o755)
+    result = subprocess.run([shutil.which("bash"), str(LINT)], cwd=str(tmp_path), capture_output=True, text=True,
+                            encoding="utf-8", env={"PATH": path})
+    warnings = [line for line in result.stdout.splitlines() if "Linux only" in line]
+    assert len(warnings) == 1
+    assert "is valid" not in result.stdout
+    assert result.returncode == 0

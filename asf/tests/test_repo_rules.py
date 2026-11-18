@@ -8,12 +8,14 @@ the call and names that repository's rule files, its imports followed, to be rea
 from __future__ import annotations
 
 import json
+import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
-from conftest import ASF
+from conftest import ASF, WINDOWS, system_env
 
 HOOK = ASF / "claude" / "hooks" / "repo-rules.py"
 
@@ -25,8 +27,8 @@ def dev(tmp_path: Path) -> Path:
     for repo in ("kasten", "other"):
         (root / repo).mkdir(parents=True)
         subprocess.run(["git", "init", "-q", str(root / repo)], check=True)
-    (root / "other" / "CLAUDE.md").write_text("@AGENTS.md\n")
-    (root / "other" / "AGENTS.md").write_text("# Rules of other\n")
+    (root / "other" / "CLAUDE.md").write_text("@AGENTS.md\n", encoding="utf-8", newline="\n")
+    (root / "other" / "AGENTS.md").write_text("# Rules of other\n", encoding="utf-8", newline="\n")
     return root
 
 
@@ -36,9 +38,10 @@ def run(dev: Path, tool: str, tool_input: dict, *, session: str = "s1", cwd: Pat
         "session_id": session, "cwd": str(cwd or dev / "kasten"), "hook_event_name": "PreToolUse",
         "tool_name": tool, "tool_input": tool_input,
     })
-    result = subprocess.run(["python3", str(HOOK)], input=payload, capture_output=True, text=True,
-                            env={"REPO_RULES_STATE": str(dev.parent / "state"), "HOME": str(dev.parent),
-                                 "PATH": "/usr/bin:/bin"})
+    result = subprocess.run([sys.executable, str(HOOK)], input=payload, capture_output=True, text=True, encoding="utf-8",
+                            env={**system_env(), "REPO_RULES_STATE": str(dev.parent / "state"),
+                                 "HOME": str(dev.parent), "USERPROFILE": str(dev.parent),
+                                 "PATH": os.environ["PATH"] if WINDOWS else "/usr/bin:/bin"})
     assert result.returncode == 0, result.stderr
     return json.loads(result.stdout) if result.stdout.strip() else None
 
@@ -69,20 +72,20 @@ def test_another_session_is_denied_again(dev):
 
 
 def test_the_sessions_own_repository_goes_through(dev):
-    (dev / "kasten" / "AGENTS.md").write_text("# Kasten\n")
+    (dev / "kasten" / "AGENTS.md").write_text("# Kasten\n", encoding="utf-8", newline="\n")
     assert run(dev, "Write", {"file_path": str(dev / "kasten" / "notes" / "new.md")}) is None
 
 
 def test_a_repository_the_session_started_below_goes_through(dev):
     (dev / "kasten" / "sub").mkdir()
-    (dev / "kasten" / "AGENTS.md").write_text("# Kasten\n")
+    (dev / "kasten" / "AGENTS.md").write_text("# Kasten\n", encoding="utf-8", newline="\n")
     assert run(dev, "Read", {"file_path": str(dev / "kasten" / "AGENTS.md")},
                cwd=dev / "kasten" / "sub") is None
 
 
 def test_a_worktree_of_the_sessions_own_repository_goes_through(dev):
     kasten = dev / "kasten"
-    (kasten / "AGENTS.md").write_text("# Kasten\n")
+    (kasten / "AGENTS.md").write_text("# Kasten\n", encoding="utf-8", newline="\n")
     subprocess.run(["git", "-C", str(kasten), "-c", "user.name=t", "-c", "user.email=t@example.invalid",
                     "commit", "-q", "--allow-empty", "-m", "start"], check=True)
     worktree = dev / "kasten.worktrees" / "item"
@@ -107,9 +110,9 @@ def test_imports_are_followed_once_and_missing_or_quoted_ones_are_left_out(dev):
     (other / "AGENTS.md").write_text(
         "# Rules\n\nSee @docs/principles.md and @docs/missing.md, ask @someone.\n\n"
         "```\n@docs/example.md\n```\n"
-    )
-    (other / "docs" / "principles.md").write_text("Back to @../AGENTS.md\n")
-    (other / "docs" / "example.md").write_text("an example\n")
+    , encoding="utf-8", newline="\n")
+    (other / "docs" / "principles.md").write_text("Back to @../AGENTS.md\n", encoding="utf-8", newline="\n")
+    (other / "docs" / "example.md").write_text("an example\n", encoding="utf-8", newline="\n")
     reason = denied(run(dev, "Read", {"file_path": str(other / "README.md")}))
     assert str(other / "docs" / "principles.md") in reason
     assert reason.count(str(other / "AGENTS.md")) == 1
@@ -119,7 +122,7 @@ def test_imports_are_followed_once_and_missing_or_quoted_ones_are_left_out(dev):
 
 def test_a_rule_file_in_dot_claude_is_named_too(dev):
     (dev / "other" / ".claude").mkdir()
-    (dev / "other" / ".claude" / "CLAUDE.md").write_text("# more rules\n")
+    (dev / "other" / ".claude" / "CLAUDE.md").write_text("# more rules\n", encoding="utf-8", newline="\n")
     reason = denied(run(dev, "Read", {"file_path": str(dev / "other" / "README.md")}))
     assert str(dev / "other" / ".claude" / "CLAUDE.md") in reason
 
@@ -140,7 +143,7 @@ def test_the_search_and_notebook_tools_count(dev, tool, key):
     "grep -rn foo {other}/src | head",
 ])
 def test_a_bash_command_that_names_a_path_in_the_repository_counts(dev, command):
-    command = command.format(other=dev / "other")
+    command = command.format(other=(dev / "other").as_posix())
     denied(run(dev, "Bash", {"command": command}))
 
 
@@ -148,10 +151,19 @@ def test_a_bash_command_that_names_two_repositories_names_both(dev):
     third = dev / "third"
     third.mkdir()
     subprocess.run(["git", "init", "-q", str(third)], check=True)
-    (third / "AGENTS.md").write_text("# third\n")
-    reason = denied(run(dev, "Bash", {"command": f"diff {dev / 'other' / 'AGENTS.md'} {third / 'AGENTS.md'}"}))
+    (third / "AGENTS.md").write_text("# third\n", encoding="utf-8", newline="\n")
+    reason = denied(run(dev, "Bash", {"command": f"diff {(dev / 'other' / 'AGENTS.md').as_posix()} {(third / 'AGENTS.md').as_posix()}"}))
     assert str(dev / "other" / "AGENTS.md") in reason
     assert str(third / "AGENTS.md") in reason
+
+
+@pytest.mark.skipif(not WINDOWS, reason="a /c/... drive path is the Git Bash form on Windows only")
+def test_a_git_bash_drive_path_counts(dev):
+    posix = (dev / "other").as_posix()
+    git_bash = f"/{posix[0].lower()}{posix[2:]}"
+    reason = denied(run(dev, "Bash", {"command": f"git -C {git_bash} status"}))
+    assert str(dev / "other" / "CLAUDE.md") in reason
+    assert str(dev / "other" / "AGENTS.md") in reason
 
 
 def test_a_bash_command_without_such_a_path_goes_through(dev):

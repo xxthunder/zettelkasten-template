@@ -9,6 +9,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -19,12 +20,15 @@ from conftest import ASF
 # podman's alias
 RUNTIME = next((cmd for cmd in ("podman", "docker") if shutil.which(cmd)), None)
 
-pytestmark = pytest.mark.skipif(RUNTIME is None, reason="neither podman nor docker is installed")
+pytestmark = [
+    pytest.mark.skipif(RUNTIME is None, reason="neither podman nor docker is installed"),
+    pytest.mark.skipif(sys.platform == "win32", reason="the Structurizr scripts run on Linux only (ZKK-023)"),
+]
 
 # Rootless podman maps the container's --user to a subordinate uid that cannot write the
 # mounted directory; keep-id maps the calling user into the container unchanged
 RUN_AS = (["--userns=keep-id"] if RUNTIME == "podman" else []) + [
-    "--user", f"{os.getuid()}:{os.getgid()}",
+    "--user", f"{os.getuid() if hasattr(os, 'getuid') else 0}:{os.getgid() if hasattr(os, 'getgid') else 0}",
 ]
 
 IMAGE = "docker.io/structurizr/structurizr:latest"
@@ -41,9 +45,9 @@ def workspace(tmp_path_factory) -> dict:
             "-v", f"{ASF / 'architecture'}:/workspace:ro", "-v", f"{out}:/out",
             IMAGE, "export", "-w", "/workspace/workspace.dsl", "-f", "json", "-o", "/out",
         ],
-        check=True, capture_output=True, text=True,
+        check=True, capture_output=True, text=True, encoding="utf-8",
     )
-    return json.loads((out / "workspace.json").read_text())
+    return json.loads((out / "workspace.json").read_text(encoding="utf-8"))
 
 
 def systems(ws: dict) -> list[dict]:

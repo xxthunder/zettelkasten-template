@@ -10,6 +10,12 @@ loaded then. Read them before the first change there and follow them as if the s
 started in it — test-first and running the test suite before every commit included. The
 `repo-rules` hook holds the first call there back until they are read, and names them.
 
+- **Say which repository you are in** when you switch, so the author can follow.
+- **Read the current code, and the copy that runs.** Before you compare or cite a local
+  checkout, run `git fetch`. Check its branch against the default branch of `origin`. Read
+  the default branch when they differ. When a tool loads a file from a fixed path, read that
+  copy, not another clone. Name the commit you read.
+
 ## Git
 
 - **Linear history**: never merge one branch into another; no merge commits. Update a branch by
@@ -44,6 +50,16 @@ started in it — test-first and running the test suite before every commit incl
 - **Prior art first**: before designing a loop, a harness or a script, look at what the
   installed plugins and known tools already do. Build only the gap, and say why the existing
   one did not serve.
+- **Design output goes into the repository's record**: write a design into its backlog item,
+  its `docs/adr/` or its architecture document, with the `refinement`, `design-record` and
+  `backlog-ops` skills. Write the plan of a closed loop into the worktree's git dir
+  (`git rev-parse --absolute-git-dir`). Do not use `docs/superpowers/specs/` or
+  `docs/superpowers/plans/`: a copy there drifts from the record.
+- **Language follows the text type, not the folder**: read the repository's language
+  convention before you write, in a `CONVENTIONS.md`, an ADR or `AGENTS.md`. Where it states
+  nothing, use the language of the text around it. Decide the language of the conversation
+  and of the artifact separately. Do not translate a text type the convention puts in
+  another language.
 - **Follow-up work goes into a backlog item** — the repository's `docs/backlog/`, or the
   consuming repository's for one without a backlog — not into a GitHub issue.
 - **The author is the Product Owner** of every repository. When a request goes against an

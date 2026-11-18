@@ -66,6 +66,12 @@ def bash_paths(command: str, cwd: Path) -> list[Path]:
     paths = []
     for token in tokens:
         token = token.split("=", 1)[-1]
+        if os.name == "nt":
+            # Git Bash writes a drive as C:/dir or /c/dir; read both as C:/dir.
+            token = re.sub(r"^/([A-Za-z])/", r"\1:/", token)
+            if re.match(r"[A-Za-z]:/", token):
+                paths.append(Path(token))
+                continue
         if token.startswith(("/", "~", "./", "../")):
             paths.append(cwd / os.path.expanduser(token))
     return paths

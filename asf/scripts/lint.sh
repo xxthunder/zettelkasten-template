@@ -5,6 +5,9 @@
 
 set -e
 
+# grep -P needs a UTF-8 locale; Git Bash sets none, and grep then refuses the pattern.
+export LC_ALL=C.UTF-8
+
 # The content areas: every top-level folder with a README.md hub. The template's
 # own folders and the meta folders are never areas, so the same script lints every
 # Kasten without a list of its areas.
@@ -123,6 +126,14 @@ WORKSPACE=asf/architecture/workspace.dsl
 STRUCTURIZR_IMAGE=${STRUCTURIZR_IMAGE:-docker.io/structurizr/structurizr:latest}
 if [ -f "$WORKSPACE" ]; then
   echo "--- Architecture ---"
+  case "$OSTYPE" in
+    msys*|cygwin*)
+      # Linux paths and uids in the container run: ZKK-023 keeps the check Linux only.
+      # $OSTYPE is a bash variable; the lint may run with a PATH that has no uname.
+      echo "  ⚠️  Architecture not validated: the check runs on Linux only"
+      WARNINGS=$((WARNINGS + 1))
+      ;;
+    *)
   if ! command -v docker > /dev/null 2>&1; then
     echo "  ⚠️  Architecture not validated: docker is not installed"
     WARNINGS=$((WARNINGS + 1))
@@ -134,6 +145,8 @@ if [ -f "$WORKSPACE" ]; then
     echo "$output" | grep -iE "error|exception" | head -5 | sed 's/^/     /'
     ERRORS=$((ERRORS + 1))
   fi
+      ;;
+  esac
 fi
 
 echo ""

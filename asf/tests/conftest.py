@@ -10,12 +10,30 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 ASF = Path(__file__).resolve().parents[1]
+WINDOWS = sys.platform == "win32"
 IGNORED = shutil.ignore_patterns(".venv", "__pycache__", ".pytest_cache")
+
+
+def system_env() -> dict[str, str]:
+    """The variables a Windows process needs to start (SSL, cmd, PATHEXT); empty on Linux."""
+    if not WINDOWS:
+        return {}
+    names = ("SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "TEMP", "TMP")
+    return {name: os.environ[name] for name in names if name in os.environ}
+
+
+def symlink(link: Path, target: Path) -> None:
+    """Create a symlink; skip the test where the machine allows none (Windows without the privilege)."""
+    try:
+        link.symlink_to(target)
+    except OSError as error:
+        pytest.skip(f"this machine cannot create symlinks: {error}")
 
 
 @pytest.fixture
@@ -37,12 +55,12 @@ if [ -n "${FAKE_CLAUDE_FAILS:-}" ] && [ "$last" = "$FAKE_CLAUDE_FAILS" ]; then
 fi
 settings="$HOME/.claude/settings.json"
 if [ "$1 $2 $3" = "plugin marketplace add" ] && [ -f "$settings" ]; then
-    python3 - "$settings" <<'EOF'
+    "${PYTHON:-python3}" - "$settings" <<'EOF'
 import json, sys
-data = json.load(open(sys.argv[1]))
+data = json.load(open(sys.argv[1], encoding="utf-8"))
 for spec in data.get("extraKnownMarketplaces", {}).values():
     spec.pop("autoUpdate", None)
-open(sys.argv[1], "w").write(json.dumps(data, indent=2) + "\n")
+open(sys.argv[1], "w", encoding="utf-8", newline=chr(10)).write(json.dumps(data, indent=2) + "\n")
 EOF
 fi
 '''
@@ -52,12 +70,18 @@ fi
 def env(home: Path, tmp_path: Path) -> dict[str, str]:
     tools = tmp_path / "bin"
     tools.mkdir()
-    (tools / "claude").write_text(FAKE_CLAUDE)
+    (tools / "claude").write_text(FAKE_CLAUDE, encoding="utf-8", newline="\n")
     (tools / "claude").chmod(0o755)
+    if WINDOWS:
+        # shutil.which finds a command through PATHEXT only, so the sh fake needs a .cmd wrapper
+        (tools / "claude.cmd").write_text('@bash "%~dp0claude" %*\r\n', encoding="utf-8", newline="")
     return {
+        **system_env(),
+        "PYTHON": sys.executable.replace("\\", "/"),
         "PATH": f"{tools}{os.pathsep}{os.environ['PATH']}",
         "FAKE_CLAUDE_LOG": str(tmp_path / "claude.log"),
         "HOME": str(home),
+        "USERPROFILE": str(home),
         "XDG_CONFIG_HOME": str(home / ".config"),
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_AUTHOR_NAME": "Test",
@@ -74,19 +98,25 @@ def template(tmp_path: Path, env: dict[str, str]) -> Path:
     shutil.copytree(ASF, root / "asf", ignore=IGNORED)
     git("init", "-q", "-b", "main", cwd=root, env=env)
     git("add", "-A", cwd=root, env=env)
+    # NTFS has no mode bit, so `git add` stages every file at 100644; a real clone keeps the committed modes
+    real = git("ls-files", "-s", "asf", cwd=ASF.parent, env=env)
+    for line in real.splitlines():
+        meta, path = line.split("\t", 1)
+        if meta.startswith("100755") and (root / path).is_file():
+            git("update-index", "--chmod=+x", path, cwd=root, env=env)
     git("commit", "-q", "-m", "template", cwd=root, env=env)
     return root
 
 
 def git(*args: str, cwd: Path, env: dict[str, str]) -> str:
     return subprocess.run(
-        ["git", *args], cwd=str(cwd), env=env, check=True, capture_output=True, text=True
+        ["git", *args], cwd=str(cwd), env=env, check=True, capture_output=True, text=True, encoding="utf-8"
     ).stdout.strip()
 
 
 def kasten(script_root: Path, *args: str, cwd: Path, env: dict[str, str]) -> subprocess.CompletedProcess:
     """Run asf/scripts/kasten.py of the Kasten or template at script_root."""
     return subprocess.run(
-        ["python3", str(script_root / "asf" / "scripts" / "kasten.py"), *args],
-        cwd=str(cwd), env=env, capture_output=True, text=True,
+        [sys.executable, str(script_root / "asf" / "scripts" / "kasten.py"), *args],
+        cwd=str(cwd), env=env, capture_output=True, text=True, encoding="utf-8",
     )

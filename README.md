@@ -8,8 +8,10 @@ remotes, names — is never in here.
 
 ## Start a Kasten
 
-1. Install [Claude Code](https://docs.claude.com/en/docs/claude-code), `git` and `python3`;
-   set your git identity (`git config --global user.name …`, `user.email …`).
+1. Install [Claude Code](https://docs.claude.com/en/docs/claude-code), git, Python 3.11 or
+   newer and [uv](https://docs.astral.sh/uv/). On Windows, git is Git for Windows: its Git
+   Bash runs the scripts. Type `python` where this README and `AGENTS.md` show `python3`.
+   Set your git identity (`git config --global user.name …`, `user.email …`).
 2. Clone this template and start Claude Code in the clone:
 
    ```bash

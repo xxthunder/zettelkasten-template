@@ -7,9 +7,12 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
+
+linux_only = pytest.mark.skipif(sys.platform == "win32", reason="the Structurizr scripts run on Linux only (ZKK-023)")
 
 ASF = Path(__file__).resolve().parents[1]
 SCRIPT = ASF / "scripts" / "structurizr-export.sh"
@@ -20,7 +23,7 @@ IMAGE = "ghcr.io/puppeteer/puppeteer"
 
 def fake(bin_dir: Path, name: str, body: str) -> None:
     script = bin_dir / name
-    script.write_text(f'#!{shutil.which("bash")}\n{body}\n')
+    script.write_text(f'#!{shutil.which("bash")}\n{body}\n', encoding="utf-8", newline="\n")
     script.chmod(0o755)
 
 
@@ -41,12 +44,12 @@ def fake_path(tmp_path: Path, runtimes: tuple[str, ...], exit_code: int = 0) -> 
 def run(tmp_path: Path, *args: str, runtimes: tuple[str, ...] = ("podman",), exit_code: int = 0,
         cwd: Path | None = None) -> subprocess.CompletedProcess:
     env = {"PATH": fake_path(tmp_path, runtimes, exit_code)}
-    return subprocess.run([shutil.which("bash"), str(SCRIPT), *args], capture_output=True, text=True,
+    return subprocess.run([shutil.which("bash"), str(SCRIPT), *args], capture_output=True, text=True, encoding="utf-8",
                           stdin=subprocess.DEVNULL, env=env, cwd=cwd or tmp_path)
 
 
 def log(tmp_path: Path) -> list[str]:
-    return (tmp_path / "called").read_text().splitlines()
+    return (tmp_path / "called").read_text(encoding="utf-8").splitlines()
 
 
 def podman_command(out: Path, port: int = 8080) -> str:
@@ -55,61 +58,71 @@ def podman_command(out: Path, port: int = 8080) -> str:
             f"http://localhost:{port}/workspace/1/diagrams /out")
 
 
+@linux_only
 def test_a_running_viewer_is_used_for_the_export(tmp_path):
     result = run(tmp_path, f"--out={tmp_path / 'out'}")
     assert result.returncode == 0
     assert log(tmp_path) == [podman_command(tmp_path / "out")]
 
 
+@linux_only
 def test_the_port_is_passed_on(tmp_path):
     run(tmp_path, f"--out={tmp_path / 'out'}", "--port=9090")
     assert log(tmp_path) == [podman_command(tmp_path / "out", 9090)]
     assert "http://localhost:9090/workspace/1/diagrams" in log(tmp_path)[0]
 
 
+@linux_only
 def test_a_relative_out_lands_under_the_current_directory(tmp_path):
     run(tmp_path, "--out=views", cwd=tmp_path)
     assert f"-v {tmp_path}/views:/out" in log(tmp_path)[0]
 
 
+@linux_only
 def test_a_missing_out_folder_is_created(tmp_path):
     run(tmp_path, f"--out={tmp_path / 'new' / 'views'}")
     assert (tmp_path / "new" / "views").is_dir()
 
 
+@linux_only
 def test_podman_wins_when_docker_is_there_too(tmp_path):
     run(tmp_path, f"--out={tmp_path / 'out'}", runtimes=("docker", "podman"))
     assert log(tmp_path) == [podman_command(tmp_path / "out")]
 
 
+@linux_only
 def test_docker_alone_runs_as_the_calling_user_with_a_writable_home(tmp_path):
     result = run(tmp_path, f"--out={tmp_path / 'out'}", runtimes=("docker",))
     assert result.returncode == 0
     assert log(tmp_path) == [
-        f"docker run --rm --network host --user {os.getuid()}:{os.getgid()} -e HOME=/tmp -e {NODE_PATH} "
+        f"docker run --rm --network host --user {os.getuid() if hasattr(os, 'getuid') else 0}:{os.getgid() if hasattr(os, 'getgid') else 0} -e HOME=/tmp -e {NODE_PATH} "
         f"-v {ASF}/scripts:/scripts:ro -v {tmp_path / 'out'}:/out {IMAGE} node /scripts/structurizr-export.js "
         "http://localhost:8080/workspace/1/diagrams /out"
     ]
 
 
+@linux_only
 def test_without_a_runtime_it_exits_1(tmp_path):
     result = run(tmp_path, f"--out={tmp_path / 'out'}", runtimes=())
     assert result.returncode == 1
     assert "neither podman nor docker" in result.stderr
 
 
+@linux_only
 def test_without_out_it_exits_4(tmp_path):
     result = run(tmp_path)
     assert result.returncode == 4
     assert "Usage:" in result.stderr
 
 
+@linux_only
 def test_an_unknown_argument_exits_4(tmp_path):
     result = run(tmp_path, f"--out={tmp_path / 'out'}", "--verbose")
     assert result.returncode == 4
     assert "Usage:" in result.stderr
 
 
+@linux_only
 @pytest.mark.parametrize("port", ["0", "65536", "abc"])
 def test_a_port_out_of_range_exits_4(tmp_path, port):
     result = run(tmp_path, f"--out={tmp_path / 'out'}", f"--port={port}")
@@ -117,6 +130,7 @@ def test_a_port_out_of_range_exits_4(tmp_path, port):
     assert "Usage:" in result.stderr
 
 
+@linux_only
 def test_the_exit_code_of_the_export_is_passed_on(tmp_path):
     result = run(tmp_path, f"--out={tmp_path / 'out'}", exit_code=3)
     assert result.returncode == 3
@@ -128,7 +142,7 @@ REAL_SLEEP = shutil.which("sleep")
 
 
 def local_command(port: int = 8080) -> str:
-    return (f"podman run --rm --userns=keep-id --user {os.getuid()}:{os.getgid()} -p {port}:8080 "
+    return (f"podman run --rm --userns=keep-id --user {os.getuid() if hasattr(os, 'getuid') else 0}:{os.getgid() if hasattr(os, 'getgid') else 0} -p {port}:8080 "
             f"-v {ASF}/architecture:/usr/local/structurizr docker.io/structurizr/structurizr local")
 
 
@@ -158,22 +172,25 @@ def run_with_viewer(tmp_path: Path, failures: int, export_exit: int = 0) -> subp
          f'  *) exit {export_exit} ;;\n'
          'esac')
     return subprocess.run([shutil.which("bash"), str(SCRIPT), f"--out={tmp_path / 'out'}"],
-                          capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                          capture_output=True, text=True, encoding="utf-8", stdin=subprocess.DEVNULL,
                           env={"PATH": str(bin_dir)}, cwd=tmp_path, timeout=30)
 
 
+@linux_only
 def test_without_a_viewer_one_is_started_used_and_stopped(tmp_path):
     result = run_with_viewer(tmp_path, failures=1)
     assert result.returncode == 0
     assert log(tmp_path) == [local_command(), podman_command(tmp_path / "out"), "stopped"]
 
 
+@linux_only
 def test_a_running_viewer_is_left_running(tmp_path):
     result = run_with_viewer(tmp_path, failures=0)
     assert result.returncode == 0
     assert log(tmp_path) == [podman_command(tmp_path / "out")]
 
 
+@linux_only
 def test_a_viewer_that_never_answers_gives_up_after_120_tries(tmp_path):
     result = run_with_viewer(tmp_path, failures=10**9)
     assert result.returncode == 2
@@ -183,7 +200,16 @@ def test_a_viewer_that_never_answers_gives_up_after_120_tries(tmp_path):
     assert log(tmp_path)[-1] == "stopped"
 
 
+@linux_only
 def test_the_started_viewer_is_stopped_when_the_export_fails(tmp_path):
     result = run_with_viewer(tmp_path, failures=1, export_exit=3)
     assert result.returncode == 3
     assert log(tmp_path)[-1] == "stopped"
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="the refusal is for Windows only (ZKK-023)")
+def test_on_windows_the_script_exits_1_and_says_linux_only(tmp_path):
+    result = subprocess.run([shutil.which("bash"), str(SCRIPT)], capture_output=True, text=True, encoding="utf-8",
+                            stdin=subprocess.DEVNULL, cwd=tmp_path)
+    assert result.returncode == 1
+    assert "runs on Linux only" in result.stderr

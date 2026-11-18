@@ -11,6 +11,14 @@
 # 4: Argument error
 # other: exit code of the container runtime
 
+# Linux paths and uids in the container runs: ZKK-023 keeps this script Linux only.
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*)
+    echo "structurizr-local.sh: runs on Linux only" >&2
+    exit 1
+    ;;
+esac
+
 USAGE="Usage: $0 [--port=<port>] [--open]"
 # Fully qualified: podman resolves a short name only when its registries.conf lists search registries
 IMAGE="docker.io/structurizr/structurizr"

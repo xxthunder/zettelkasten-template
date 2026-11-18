@@ -20,9 +20,19 @@
         longer has — and loses the Ansible hook and deny rules an earlier setup put
         in, with the hook's link in ~/.claude/hooks/ — every other setting stays as
         it is; the workflow's git settings go into the global config;
-        ~/.zshrc sources asf/shell/asf.zsh; the process-inbox skill is linked into
-        the Kasten's .claude/skills/. A file it replaces is kept as
-        <name>.bak-<timestamp>, and it says so. Running it again changes nothing.
+        ~/.zshrc sources asf/shell/asf.zsh, except on Windows, where no shell is
+        set up; the process-inbox skill is linked into the Kasten's .claude/skills/,
+        or copied where the system allows no symlink, as on Windows without the
+        privilege, and a copy an earlier setup made is replaced; auto memory is
+        pointed at the Kasten's memory/ in .claude/settings.local.json, which is
+        ignored, because the path differs per machine (other keys in that file
+        stay); it adds that file to the Kasten's .gitignore once, where an older
+        Kasten lacks the line, so that `update` does not commit it. A file it
+        replaces is kept as <name>.bak-<timestamp>, and it says so. Running it
+        again changes nothing. The repo-rules hook runs with python3, or with
+        python where the PATH has no python3 or, on Windows, only the Microsoft
+        Store stub of it. Paths it writes into ~/.claude use forward slashes.
+        Text is read and written as UTF-8 with LF line ends.
 
     kasten.py update <kasten>
         Run from a clone of the template, after `git pull` there; the clone and the
@@ -65,6 +75,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+WINDOWS = sys.platform == "win32"
 IGNORED = shutil.ignore_patterns(".venv", "__pycache__", ".pytest_cache")
 GIT_CONFIG = {
     "pull.rebase": "true",
@@ -86,17 +97,29 @@ class Conflicted(Exception):
 
 
 def git(*args: str, cwd: Path) -> str:
-    result = subprocess.run(["git", *args], cwd=str(cwd), capture_output=True, text=True)
+    result = subprocess.run(["git", *args], cwd=str(cwd), capture_output=True, text=True, encoding="utf-8")
     if result.returncode != 0:
         raise Refused(f"git {' '.join(args)} failed in {cwd}: {result.stderr.strip()}")
     return result.stdout.strip()
 
 
+LOCAL_SETTINGS = ".claude/settings.local.json"
+
+
+def read(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def write(path: Path, text: str) -> None:
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(text)
+
+
 def write_if_changed(path: Path, text: str) -> None:
-    if path.is_file() and path.read_text() == text:
+    if path.is_file() and read(path) == text:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text)
+    write(path, text)
 
 
 def back_up(path: Path) -> Path:
@@ -107,16 +130,33 @@ def back_up(path: Path) -> Path:
     return backup
 
 
+# Marks a directory that link() copied, so that a later setup replaces it without a backup.
+COPY_MARK = ".copied-by-kasten-setup"
+
+
 def link(path: Path, target: Path) -> None:
-    """Make path a symlink to target; a file in its place is kept as a backup."""
-    if path.is_symlink() and path.resolve() == target.resolve():
+    """Make path a symlink to the directory target, which is relative to path's parent.
+
+    Where the system allows no symlink (Windows without the privilege), path becomes a
+    copy of target, marked with COPY_MARK. A copy so marked is replaced; any other file
+    in path's place is kept as a backup.
+    """
+    source = (path.parent / target).resolve()
+    if path.is_symlink() and path.resolve() == source:
         return
     if path.is_symlink():
         path.unlink()
+    elif (path / COPY_MARK).is_file():
+        shutil.rmtree(path)
     elif path.exists():
         back_up(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.symlink_to(target)
+    try:
+        path.symlink_to(target, target_is_directory=True)
+    except OSError:
+        shutil.copytree(source, path, ignore=IGNORED)
+        write(path / COPY_MARK, f"A copy of {target.as_posix()} made by asf/scripts/kasten.py setup;"
+                                " the next setup replaces it.\n")
 
 
 def template_revision(source: Path) -> str:
@@ -126,7 +166,7 @@ def template_revision(source: Path) -> str:
 def read_base(kasten: Path) -> str | None:
     """The template commit the Kasten's asf/ last matched, or None if it has none."""
     path = kasten / BASE
-    return path.read_text().strip() if path.is_file() else None
+    return read(path).strip() if path.is_file() else None
 
 
 def write_base(kasten: Path, revision: str) -> None:
@@ -152,6 +192,35 @@ def copy_missing_seed(source: Path, target: Path) -> None:
             shutil.copy2(source / "asf" / "seed" / relative, destination)
 
 
+def template_executables(source: Path) -> set[str]:
+    """The Kasten paths whose file the template's index marks executable.
+
+    asf/<path> keeps its path; a seed file asf/seed/<path> lands at <path>.
+    """
+    paths = set()
+    for entry in git("ls-files", "-s", "-z", "--", "asf", cwd=source).split("\0"):
+        meta, _, path = entry.partition("\t")
+        if meta.startswith("100755"):
+            paths.add(path)
+            if path.startswith("asf/seed/"):
+                paths.add(path[len("asf/seed/"):])
+    return paths
+
+
+def stage_template_modes(source: Path, target: Path) -> None:
+    """On Windows, stage each new file of the target executable where the template's index has it so.
+
+    NTFS has no executable bit, so git stages every new file there as 100644; the
+    template's index holds the modes. On Linux and macOS the copy keeps them itself.
+    """
+    if not WINDOWS:
+        return
+    added = git("diff", "--cached", "--name-only", "-z", "--diff-filter=A", cwd=target).split("\0")
+    executables = sorted(set(added) & template_executables(source))
+    if executables:
+        git("update-index", "--chmod=+x", "--", *executables, cwd=target)
+
+
 # --- new ---------------------------------------------------------------------
 
 
@@ -162,13 +231,10 @@ def new(target: Path, remote: str | None) -> None:
     target.mkdir(parents=True, exist_ok=True)
     copy_asf(ROOT, target)
     copy_missing_seed(ROOT, target)
-    write_if_changed(
-        target / ".claude" / "settings.json",
-        json.dumps({"autoMemoryDirectory": str(target / "memory")}, indent=2) + "\n",
-    )
     write_base(target, template_revision(ROOT))
     git("init", "-q", "-b", "develop", cwd=target)
     git("add", "-A", cwd=target)
+    stage_template_modes(ROOT, target)
     git("commit", "-q", "-m", "chore: new Kasten from the template", cwd=target)
     if remote:
         git("remote", "add", "origin", remote, cwd=target)
@@ -232,12 +298,23 @@ REPO_RULES_HOOK = "repo-rules.py"
 REPO_RULES_TOOLS = "Read|Edit|Write|NotebookEdit|Glob|Grep|Bash"
 
 
+def real_python3() -> bool:
+    """Whether the PATH has a python3 that is no Windows App Execution Alias stub.
+
+    Windows 11 puts python3 stubs into a WindowsApps folder; they open the Microsoft
+    Store and start no Python.
+    """
+    found = shutil.which("python3")
+    return found is not None and not (WINDOWS and "windowsapps" in (part.lower() for part in Path(found).parts))
+
+
 def hook_in_repo_rules(settings: dict, kasten: Path) -> None:
     """Point the repo-rules hook at this Kasten, in place of one that points at another."""
     entries = settings.setdefault("hooks", {}).setdefault("PreToolUse", [])
     entries[:] = [entry for entry in entries
                   if not any(REPO_RULES_HOOK in hook.get("command", "") for hook in entry.get("hooks", []))]
-    command = f'python3 "{kasten}/asf/claude/hooks/{REPO_RULES_HOOK}"'
+    python = "python3" if real_python3() else "python"
+    command = f'{python} "{kasten.as_posix()}/asf/claude/hooks/{REPO_RULES_HOOK}"'
     entries.append({"matcher": REPO_RULES_TOOLS, "hooks": [{"type": "command", "command": command}]})
 
 
@@ -256,36 +333,67 @@ def install_plugins(shared: dict) -> None:
     commands += [["plugin", "install", plugin]
                  for plugin, enabled in shared.get("enabledPlugins", {}).items() if enabled]
     for command in commands:
-        result = subprocess.run([cli, *command], capture_output=True, text=True)
+        result = subprocess.run([cli, *command], capture_output=True, text=True,
+                                encoding="utf-8", errors="replace")
         if result.returncode != 0:
             said = (result.stdout + result.stderr).strip().splitlines()
             print(f"Could not run claude {' '.join(command)}: {said[-1] if said else 'no output'}")
 
 
+def ignore_local_settings(kasten: Path) -> None:
+    """Make sure the Kasten's .gitignore lists the machine-local settings file, once."""
+    path = kasten / ".gitignore"
+    text = read(path) if path.is_file() else ""
+    if LOCAL_SETTINGS in text.splitlines():
+        return
+    if text and not text.endswith("\n"):
+        text += "\n"
+    separator = "\n" if text else ""
+    write(path, f"{text}{separator}# Written by asf/scripts/kasten.py setup, per machine\n"
+                f"{LOCAL_SETTINGS}\n")
+
+
+def point_memory(kasten: Path) -> None:
+    """Point Claude Code's auto memory at <kasten>/memory, in the machine-local settings.
+
+    The path is absolute and differs per machine, so it goes into the ignored
+    .claude/settings.local.json. Every other key in that file stays.
+    """
+    path = kasten / LOCAL_SETTINGS
+    current = json.loads(read(path)) if path.is_file() else {}
+    memory = str(kasten / "memory")
+    if current.get("autoMemoryDirectory") == memory:
+        return
+    current["autoMemoryDirectory"] = memory
+    path.parent.mkdir(parents=True, exist_ok=True)
+    write(path, json.dumps(current, indent=2, ensure_ascii=False) + "\n")
+
+
 def setup(kasten: Path) -> None:
     kasten = kasten.resolve()
-    home = Path(os.environ["HOME"])
+    ignore_local_settings(kasten)
+    home = Path(os.environ.get("HOME") or Path.home())
     claude = home / ".claude"
     remote = None
     origin = subprocess.run(["git", "remote", "get-url", "origin"], cwd=str(kasten),
-                            capture_output=True, text=True)
+                            capture_output=True, text=True, encoding="utf-8")
     if origin.returncode == 0:
         remote = origin.stdout.strip()
 
     instructions = claude / "CLAUDE.md"
-    text = f"{GENERATED}\n\n@{kasten}/asf/claude/CLAUDE.md\n\n@{kasten}/claude/CLAUDE.md\n"
+    text = f"{GENERATED}\n\n@{kasten.as_posix()}/asf/claude/CLAUDE.md\n\n@{kasten.as_posix()}/claude/CLAUDE.md\n"
     if instructions.is_symlink():
         instructions.unlink()
-    elif instructions.is_file() and GENERATED not in instructions.read_text():
+    elif instructions.is_file() and GENERATED not in read(instructions):
         back_up(instructions)
         print(f"  It is no longer loaded; move what still applies into {kasten}/claude/CLAUDE.md")
     write_if_changed(instructions, text)
 
     # The CLI rewrites the user settings, so they are read and merged after it ran.
-    shared = json.loads((kasten / "asf" / "claude" / "settings.json").read_text())
+    shared = json.loads(read(kasten / "asf" / "claude" / "settings.json"))
     install_plugins(shared)
     settings_path = claude / "settings.json"
-    current = json.loads(settings_path.read_text()) if settings_path.is_file() else {}
+    current = json.loads(read(settings_path)) if settings_path.is_file() else {}
     merged = merge_settings(current, shared, kasten, remote, dict(os.environ))
     if merged != current:
         write_if_changed(settings_path, json.dumps(merged, indent=2, ensure_ascii=False) + "\n")
@@ -295,16 +403,21 @@ def setup(kasten: Path) -> None:
         old_hook.unlink()
 
     for key, value in GIT_CONFIG.items():
-        present = subprocess.run(["git", "config", "--global", key], capture_output=True, text=True)
+        present = subprocess.run(["git", "config", "--global", key], capture_output=True, text=True,
+                                 encoding="utf-8")
         if present.stdout.strip() != value:
             git("config", "--global", key, value, cwd=kasten)
 
-    zshrc = home / ".zshrc"
-    line = f"source {kasten}/asf/shell/asf.zsh"
-    existing = zshrc.read_text() if zshrc.is_file() else ""
-    if line not in existing.splitlines():
-        separator = "" if not existing or existing.endswith("\n") else "\n"
-        write_if_changed(zshrc, f"{existing}{separator}{line}\n")
+    # Windows has no zsh; there the claude and uv installers put themselves on the PATH.
+    if not WINDOWS:
+        zshrc = home / ".zshrc"
+        line = f"source {kasten}/asf/shell/asf.zsh"
+        existing = read(zshrc) if zshrc.is_file() else ""
+        if line not in existing.splitlines():
+            separator = "" if not existing or existing.endswith("\n") else "\n"
+            write_if_changed(zshrc, f"{existing}{separator}{line}\n")
+
+    point_memory(kasten)
 
     for skill in sorted((kasten / "asf" / "skills").iterdir()):
         link(kasten / ".claude" / "skills" / skill.name, Path("../../asf/skills") / skill.name)
@@ -329,10 +442,19 @@ def take(file: Path, content: bytes | None) -> None:
     file.write_bytes(content)
 
 
-def follow_mode(file: Path, old_mode: str, new_mode: str) -> None:
+def follow_mode(kasten: Path, path: str, old_mode: str, new_mode: str) -> None:
     """Take the template's change of the executable bit, unless the Kasten changed it itself."""
     was, now = old_mode == "100755", new_mode == "100755"
+    file = kasten / path
     if was == now or not file.is_file():
+        return
+    if WINDOWS:
+        # NTFS has no executable bit; the Kasten's git index holds it, so the mode is set there.
+        entry = git("ls-files", "-s", "--", path, cwd=kasten).split()
+        if entry and (entry[0] == "100755") == was:
+            git("update-index", "--cacheinfo", f"{new_mode},{entry[1]},{path}", cwd=kasten)
+        elif not entry and now:
+            git("update-index", "--add", "--chmod=+x", "--", path, cwd=kasten)
         return
     mode = file.stat().st_mode
     if bool(mode & 0o100) == was:
@@ -374,7 +496,7 @@ def merge_asf(template: Path, base: str, kasten: Path) -> list[str]:
             file.write_bytes(merged)
             if conflicted:
                 conflicts.append(path)
-        follow_mode(file, old_mode, new_mode)
+        follow_mode(kasten, path, old_mode, new_mode)
     return sorted(conflicts)
 
 
@@ -407,11 +529,12 @@ def update(target: Path) -> None:
     copy_missing_seed(ROOT, target)
     setup(target)
     git("add", "-A", cwd=target)
+    stage_template_modes(ROOT, target)
     if not git("status", "--porcelain", cwd=target):
         print(f"{target} is up to date with the template")
         return
     revision = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=str(ROOT),
-                              capture_output=True, text=True).stdout.strip() or "unknown"
+                              capture_output=True, text=True, encoding="utf-8").stdout.strip() or "unknown"
     git("commit", "-q", "-m", f"chore(asf): update from the template ({revision})", cwd=target)
     print(f"Updated {target} from the template ({revision}); push it when you are ready")
 
@@ -422,7 +545,7 @@ def update(target: Path) -> None:
 def read_patterns(path: Path) -> list[re.Pattern]:
     if not path.is_file():
         raise Refused(f"no patterns file at {path} — the export needs the list of what must not leak")
-    lines = (line.strip() for line in path.read_text().splitlines())
+    lines = (line.strip() for line in read(path).splitlines())
     checks = [re.compile(line, re.IGNORECASE) for line in lines if line and not line.startswith("#")]
     if not checks:
         raise Refused(f"{path} has no pattern — add what must not leak, one regular expression per line")
@@ -436,19 +559,19 @@ def leaks(source: Path, checks: list[re.Pattern]) -> list[str]:
         if not path.is_file() or any(part in {".venv", "__pycache__", ".pytest_cache"} for part in relative.parts):
             continue
         try:
-            lines = path.read_text().splitlines()
+            lines = read(path).splitlines()
         except UnicodeDecodeError:
             continue
         for number, line in enumerate(lines, 1):
             for check in checks:
                 if check.search(line):
-                    found.append(f"{relative}:{number}: matches '{check.pattern}'")
+                    found.append(f"{relative.as_posix()}:{number}: matches '{check.pattern}'")
     return found
 
 
 def has_upstream(repo: Path) -> bool:
     result = subprocess.run(["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
-                            cwd=str(repo), capture_output=True, text=True)
+                            cwd=str(repo), capture_output=True, text=True, encoding="utf-8")
     return result.returncode == 0
 
 
@@ -458,7 +581,7 @@ def check_on_base(kasten: Path, dest: Path) -> None:
     if base is None:
         raise Refused(f"{kasten} has no {BASE} — run `kasten.py update` from the template clone first")
     toplevel = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=str(dest),
-                              capture_output=True, text=True) if dest.is_dir() else None
+                              capture_output=True, text=True, encoding="utf-8") if dest.is_dir() else None
     if not toplevel or toplevel.returncode != 0 or Path(toplevel.stdout.strip()).resolve() != dest:
         raise Refused(f"{dest} is no git repository — export into a clone of the template")
     if git("status", "--porcelain", cwd=dest):
@@ -486,11 +609,17 @@ def export(dest: Path, patterns: Path) -> None:
         shutil.rmtree(entry) if entry.is_dir() and not entry.is_symlink() else entry.unlink()
     copy_asf(ROOT, dest)
     for entry in sorted((ROOT / "asf" / "template").iterdir()):
-        shutil.copy2(entry, dest / entry.name)
+        if entry.is_dir():
+            shutil.copytree(entry, dest / entry.name)
+        else:
+            shutil.copy2(entry, dest / entry.name)
     print(f"Exported the template to {dest}; leak check clean — review and commit it there")
 
 
 def main(argv: list[str]) -> int:
+    # Paths and messages hold non-ASCII text, which a Windows console would encode in its code page.
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(prog="kasten.py", description=__doc__.split("\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
     make = commands.add_parser("new", help="make a new Kasten from this template")

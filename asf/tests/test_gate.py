@@ -25,7 +25,7 @@ def make_kasten(root: Path, test: str = PASSING) -> Path:
     for harness in ("pyproject.toml", "uv.lock"):
         shutil.copy2(ASF / harness, root / "asf" / harness)
     (root / "asf" / "tests").mkdir()
-    (root / "asf" / "tests" / "test_one.py").write_text(test)
+    (root / "asf" / "tests" / "test_one.py").write_text(test, encoding="utf-8", newline="\n")
     (root / "scripts").mkdir()
     shutil.copy2(ASF / "seed" / "scripts" / "gate", root / "scripts" / "gate")
     return root
@@ -34,8 +34,8 @@ def make_kasten(root: Path, test: str = PASSING) -> Path:
 def gate(kasten: Path, cwd: Path) -> subprocess.CompletedProcess:
     # Without the outer uv run's venv, the inner one prints no mismatch warning.
     env = {k: v for k, v in os.environ.items() if k != "VIRTUAL_ENV"}
-    return subprocess.run([str(kasten / "scripts" / "gate")], cwd=str(cwd), env=env,
-                          capture_output=True, text=True)
+    return subprocess.run([shutil.which("bash"), str(kasten / "scripts" / "gate")], cwd=str(cwd), env=env,
+                          capture_output=True, text=True, encoding="utf-8")
 
 
 def test_green_tests_and_clean_lint_pass(tmp_path):
@@ -57,7 +57,7 @@ def test_red_tests_fail_and_the_lint_still_runs(tmp_path):
 def test_red_lint_fails(tmp_path):
     kasten = make_kasten(tmp_path / "k")
     (kasten / "garden").mkdir()
-    (kasten / "garden" / "README.md").write_text("# no frontmatter\n")
+    (kasten / "garden" / "README.md").write_text("# no frontmatter\n", encoding="utf-8", newline="\n")
     result = gate(kasten, tmp_path)
     assert result.returncode != 0
     assert "Missing frontmatter: garden/README.md" in result.stdout

@@ -69,6 +69,14 @@ Kasten goes into its own files in its root — its own `AGENTS.md` imports
   `.claude/skills/`
 - `seed/` — the files a new Kasten starts with; afterwards they are the Kasten's own
 
+## Requirements
+
+- **Linux**: bash, git, Python 3.11 or newer, and [uv](https://docs.astral.sh/uv/).
+- **Windows**: Git for Windows (its Git Bash runs the scripts), Python 3.11 or newer, and uv.
+  Where this README shows `python3`, type `python` on Windows.
+- **Linux and docker or podman**: the Structurizr viewer and export need one of the two.
+  The architecture check of `lint.sh` needs `docker`. On Windows the lint skips that check.
+
 ## Behind a proxy
 
 `setup` copies `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY` and `NODE_EXTRA_CA_CERTS` from its own

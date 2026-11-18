@@ -11,6 +11,9 @@ Thumbs.db
 # Linked by asf/scripts/kasten.py setup, not tracked
 .claude/skills/process-inbox
 
+# Written by asf/scripts/kasten.py setup, per machine
+.claude/settings.local.json
+
 # Python caches of the asf/ scripts and tests
 __pycache__/
 .pytest_cache/

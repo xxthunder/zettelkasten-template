@@ -18,7 +18,8 @@ Three things are done here.
 3. **Make it**: `python3 asf/scripts/kasten.py new <path> --remote <url>` (without
    `--remote` when there is none). It copies `asf/` and the starting files, commits on
    `develop`, and sets this machine up: `~/.claude/CLAUDE.md`, the plugins,
-   `~/.claude/settings.json`, the hook, the git workflow settings, the zsh fragment.
+   `~/.claude/settings.json`, the hook, the git workflow settings, the zsh fragment. On
+   Windows, run every `python3` command here as `python`; there is no zsh fragment.
 4. **Language**: if it is not English, change the language line in the new Kasten's
    `CONVENTIONS.md` → Language and the section *Conversation language* in its `AGENTS.md`,
    and commit that in the new Kasten.
