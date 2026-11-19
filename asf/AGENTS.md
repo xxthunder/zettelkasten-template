@@ -215,6 +215,13 @@ and nothing else about this repository; keep it complete.
 - **CI as the gate**: where a check of the CI cannot run locally — secrets, a build matrix,
   hardware, a runner of its own — the CI itself is the gate. The checks that do run locally
   give the fix rounds their feedback; the loop pushes the branch and waits for the CI.
+- **Checks outside the gate**: when the repository names its gate (source 1 or 2), compare
+  it at every start with the checks its CI runs or reports on a pull request, coverage
+  services included. Write each check the gate does not run into the plan, and run it
+  locally where that is possible, so the fix rounds see it. Name each one under *Open* in
+  the evidence package, with its result on the pull request. A check that a script can
+  decide belongs in the repository's gate, not in a rubric: write it into a backlog item
+  of that repository.
 - **Rubric**: the general [rubric.md](rubric.md) here, which holds for every repository,
   and the repository's own, for what only its changes need: the one its `Closed loop`
   section names, else `docs/rubric.md`, else its `CONTRIBUTING.md`. Both are handed to the
