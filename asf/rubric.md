@@ -16,8 +16,12 @@ Give each finding the severity its criterion names, not one of your own.
 ## 1. Prior art first
 
 Does the change build something that an installed plugin, the platform, a library or a
-well-known tool already does? If it builds its own anyway, does the item or an ADR name the
-existing thing and the gap it leaves? A finding is a new mechanism with no such reason.
+well-known tool already does? Build on the existing thing, and build only the gap it leaves.
+If the change builds its own mechanism anyway, the item or an ADR names the existing thing
+and why it cannot do the job. A finding is a new mechanism with no such reason, or a
+mechanism larger than its gap: a gap that a few lines on top of the existing thing close
+does not justify a mechanism of its own. Fix such a finding by building on the existing
+thing; naming the gap does not fix it.
 
 **Severity**: Important.
 
