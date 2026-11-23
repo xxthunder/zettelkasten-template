@@ -13,7 +13,9 @@
         ~/.claude/CLAUDE.md imports the shared and the Kasten's own global
         instructions; the claude CLI adds the shared marketplaces and installs the
         shared plugins, naming any it could not install; ~/.claude/settings.json
-        gets the shared plugins, marketplaces and the logbook, learnings and board
+        gets the shared plugins, marketplaces, the entries of the template's
+        permissions.allow, autoMode.allow and autoMode.environment that it lacks
+        (appended; its own entries stay in place) and the logbook, learnings and board
         variables for this Kasten and the repo-rules hook of this Kasten's
         asf/claude/hooks/, in place of one another Kasten put in, takes the proxy
         variables from setup's own environment — removing those the environment no
@@ -256,6 +258,9 @@ def merge_settings(current: dict, shared: dict, kasten: Path, remote: str | None
     merged.setdefault("enabledPlugins", {}).update(shared.get("enabledPlugins", {}))
     merged.setdefault("extraKnownMarketplaces", {}).update(shared.get("extraKnownMarketplaces", {}))
     drop_ansible_lock(merged)
+    for key, name in SHARED_RULES:
+        if name in shared.get(key, {}):
+            add_missing(merged.setdefault(key, {}).setdefault(name, []), shared[key][name])
     hook_in_repo_rules(merged, kasten)
     environment = merged.setdefault("env", {})
     for prefix in ("LOGBOOK", "LEARNINGS", "BOARD"):
@@ -268,6 +273,15 @@ def merge_settings(current: dict, shared: dict, kasten: Path, remote: str | None
         else:
             environment.pop(name, None)
     return merged
+
+
+# The rule lists of the shared settings that setup appends to the user settings.
+SHARED_RULES = (("permissions", "allow"), ("autoMode", "allow"), ("autoMode", "environment"))
+
+
+def add_missing(entries: list, shared: list) -> None:
+    """Append each entry of `shared` that `entries` lacks, in the order of `shared`."""
+    entries.extend(entry for entry in shared if entry not in entries)
 
 
 ANSIBLE_HOOK = "deny-ansible.py"

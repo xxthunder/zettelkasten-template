@@ -221,6 +221,51 @@ def test_setup_merges_the_shared_settings_and_keeps_the_machines_own(template, t
     assert s["env"]["BOARD_REMOTE"] == REMOTE
 
 
+RULE_LISTS = (("permissions", "allow"), ("autoMode", "allow"), ("autoMode", "environment"))
+
+
+def own_rules(shared: dict) -> dict:
+    """User settings with one own entry before and one after the last shared entry of each list."""
+    own: dict = {}
+    for key, name in RULE_LISTS:
+        own.setdefault(key, {})[name] = ["my own first", shared[key][name][-1], "my own last"]
+    return own
+
+
+def write_user_settings(home: Path, content: dict) -> None:
+    (home / ".claude").mkdir(exist_ok=True)
+    (home / ".claude" / "settings.json").write_text(json.dumps(content), encoding="utf-8", newline="\n")
+
+
+def test_setup_gives_empty_settings_the_shared_rules(template, tmp_path, env, home):
+    make(template, tmp_path, env)
+    s, shared = settings(home), shared_settings(template)
+    for key, name in RULE_LISTS:
+        assert s[key][name] == shared[key][name], (key, name)
+
+
+def test_setup_keeps_the_users_rules_in_place_and_adds_the_missing(template, tmp_path, env, home):
+    shared = shared_settings(template)
+    own = own_rules(shared)
+    write_user_settings(home, own)
+    make(template, tmp_path, env)
+    s = settings(home)
+    for key, name in RULE_LISTS:
+        # own entries stay in place; the shared entries still missing follow in template order
+        assert s[key][name] == own[key][name] + shared[key][name][:-1], (key, name)
+
+
+def test_setup_twice_with_own_rules_changes_nothing(template, tmp_path, env, home):
+    write_user_settings(home, own_rules(shared_settings(template)))
+    target = make(template, tmp_path, env)
+    shared = shared_settings(template)
+    assert all(set(shared[key][name]) <= set(settings(home)[key][name]) for key, name in RULE_LISTS)
+    before = (home / ".claude" / "settings.json").read_bytes()
+    result = kasten(target, "setup", cwd=target, env=env)
+    assert result.returncode == 0, result.stderr
+    assert (home / ".claude" / "settings.json").read_bytes() == before
+
+
 def test_setup_sets_no_remote_variables_without_an_origin(template, tmp_path, env, home):
     make(template, tmp_path, env)
     assert "LOGBOOK_REMOTE" not in settings(home)["env"]
@@ -297,8 +342,33 @@ def test_setup_turns_off_the_plugins_the_template_switches_off(template, tmp_pat
 
 def test_the_template_brings_no_ansible_lock(template):
     shared = shared_settings(template)
-    assert "hooks" not in shared and "permissions" not in shared
+    assert "hooks" not in shared and "deny" not in shared.get("permissions", {})
     assert not (template / "asf" / "claude" / "hooks" / "deny-ansible.py").exists()
+
+
+PLUGIN_SCRIPT = "/*/.claude/plugins/cache/*/scripts/*"
+
+
+def test_the_template_allows_the_commands_of_the_closed_loop(template):
+    shared = shared_settings(template)
+    assert shared["permissions"]["allow"] == [
+        "Bash(ssh *.devpod *)",
+        f"Bash(uv run {PLUGIN_SCRIPT} *)",
+        f"Bash({PLUGIN_SCRIPT} *)",
+        "Bash(git push *)",
+    ]
+
+
+def test_the_template_explains_the_closed_loop_to_auto_mode(template):
+    auto = shared_settings(template)["autoMode"]
+    assert auto["allow"][0] == "$defaults" and auto["environment"][0] == "$defaults"
+    allow = " ".join(auto["allow"])
+    for phrase in ("ssh <workspace>.devpod", "~/.claude/plugins/cache/", "trusted checkout",
+                   "asf/AGENTS.md", "default branch"):
+        assert phrase in allow, phrase
+    environment = " ".join(auto["environment"])
+    for phrase in ("~/dev/<org>/<repo>", ".worktrees", "devpod"):
+        assert phrase in environment, phrase
 
 
 def test_setup_adds_the_shared_marketplaces(template, tmp_path, env):
@@ -422,7 +492,8 @@ def test_setup_leaves_no_empty_settings_behind_the_ansible_lock(template, tmp_pa
     }), encoding="utf-8", newline="\n")
     target = make(template, tmp_path, env)
     s = settings(home)
-    assert "permissions" not in s
+    assert "deny" not in s["permissions"]
+    assert s["permissions"]["allow"] == shared_settings(template)["permissions"]["allow"]
     assert s["hooks"] == {"PreToolUse": [repo_rules_hook(target)]}
 
 

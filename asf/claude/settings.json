@@ -31,5 +31,27 @@
       },
       "autoUpdate": true
     }
+  },
+  "permissions": {
+    "allow": [
+      "Bash(ssh *.devpod *)",
+      "Bash(uv run /*/.claude/plugins/cache/*/scripts/* *)",
+      "Bash(/*/.claude/plugins/cache/*/scripts/* *)",
+      "Bash(git push *)"
+    ]
+  },
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "DevPod: allow commands inside the user's own DevPod dev containers over ssh <workspace>.devpod '<cmd>', git, tests, builds and pushes there included.",
+      "Plugin scripts: allow scripts of installed Claude Code plugins under ~/.claude/plugins/cache/, run directly or with uv run, however the path is written: literal, through a shell variable, or chained with other allowed commands.",
+      "Trusted checkouts: allow every command in a trusted checkout or its worktree, named in the environment: its gate, tests, lint, builds and git.",
+      "Kasten push: allow pushing commits of a Kasten, a repository with asf/AGENTS.md, to its default branch. Its rules let notes, log lines, board cards, memories and backlog items go there without a pull request."
+    ],
+    "environment": [
+      "$defaults",
+      "**Trusted checkouts**: the user's own repositories, cloned at ~/dev/<org>/<repo>, and their worktrees next to them (~/dev/<org>/<repo>.worktrees/<id>) or inside them (.worktrees/<id>)",
+      "**DevPod dev containers**: ssh <workspace>.devpod '<cmd>' runs commands in the user's own local dev containers (workspaces listed by devpod list, checkout at /workspaces/<workspace>); treat them like local commands in a trusted checkout"
+    ]
   }
 }

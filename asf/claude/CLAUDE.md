@@ -18,6 +18,10 @@ started in it — test-first and running the test suite before every commit incl
 
 ## Git
 
+- **Point git at the repository with `-C`**: write `git -C <path> <args>`, also inside a
+  container: `ssh <workspace>.devpod 'git -C /workspaces/<workspace> <args>'`. Claude Code asks
+  before every `cd <path> && git …`, also in auto mode and with an allow rule, so do not put a
+  `cd` in front of git.
 - **Linear history**: never merge one branch into another; no merge commits. Update a branch by
   rebasing (`git pull --rebase`, `git rebase origin/develop`). A rebased branch that is already
   pushed goes out with `git push --force-with-lease`, after telling the author.
