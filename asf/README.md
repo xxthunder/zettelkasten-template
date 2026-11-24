@@ -74,7 +74,10 @@ Kasten goes into its own files in its root — its own `AGENTS.md` imports
 
 - **Linux**: bash, git, Python 3.11 or newer, and [uv](https://docs.astral.sh/uv/).
 - **Windows**: Git for Windows (its Git Bash runs the scripts), Python 3.11 or newer, and uv.
-  Where this README shows `python3`, type `python` on Windows.
+  Where this README shows `python3`, type `python` on Windows. Turn off the App execution
+  aliases for `python.exe` and `python3.exe` (Settings > Apps > Advanced app settings) before
+  the first `setup`: where `WindowsApps` comes first in the PATH, both names start the
+  Microsoft Store stub, and the repo-rules hook fails on every call without blocking any.
 - **Linux and docker or podman**: the Structurizr viewer and export need one of the two.
   The architecture check of `lint.sh` needs `docker`. On Windows the lint skips that check.
 
