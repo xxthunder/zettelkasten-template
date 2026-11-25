@@ -90,6 +90,20 @@ started in it — test-first and running the test suite before every commit incl
   (`grep`, `tail`) only after one unfiltered read. Each warning in it is a finding: fix it, or
   name it in the report together with the reason it stays.
 
+## Deleting files
+
+An organization's managed policy can ask before every `rm`, in every permission mode, and no
+allow rule lifts that. Each delete then stops an unattended run until someone clicks.
+
+- **Overwrite a file instead of deleting it first.** A screenshot, a log or a brief that the
+  next command writes again needs no `rm`.
+- **Leave temporary files in the session scratchpad.** The harness removes the scratchpad;
+  do not clean it up.
+- **Run a needed `rm` as its own command, with literal paths.** Do not chain it behind other
+  commands or build its path from a shell variable, so the author sees exactly what goes.
+- **Delete with `rm` only.** Do not use `find -delete`, a Python call or a script to get past
+  an ask rule: that gets around a control the organization set on purpose.
+
 ## Machines
 
 - **A provisioned machine changes through the code that provisions it.** Before proposing a
