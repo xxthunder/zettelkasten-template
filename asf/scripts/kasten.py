@@ -14,8 +14,9 @@
         instructions; the claude CLI adds the shared marketplaces and installs the
         shared plugins, naming any it could not install; ~/.claude/settings.json
         gets the shared plugins, marketplaces, the entries of the template's
-        permissions.allow, autoMode.allow and autoMode.environment that it lacks
-        (appended; its own entries stay in place) and the logbook, learnings and board
+        permissions.allow, permissions.deny, autoMode.allow and
+        autoMode.environment that it lacks (appended; its own entries stay in
+        place) and the logbook, learnings and board
         variables for this Kasten and the repo-rules hook of this Kasten's
         asf/claude/hooks/, in place of one another Kasten put in, takes the proxy
         variables from setup's own environment — removing those the environment no
@@ -276,7 +277,12 @@ def merge_settings(current: dict, shared: dict, kasten: Path, remote: str | None
 
 
 # The rule lists of the shared settings that setup appends to the user settings.
-SHARED_RULES = (("permissions", "allow"), ("autoMode", "allow"), ("autoMode", "environment"))
+SHARED_RULES = (
+    ("permissions", "allow"),
+    ("permissions", "deny"),
+    ("autoMode", "allow"),
+    ("autoMode", "environment"),
+)
 
 
 def add_missing(entries: list, shared: list) -> None:

@@ -7,6 +7,7 @@ commits the result.
 """
 from __future__ import annotations
 
+import fnmatch
 import json
 import os
 import shutil
@@ -209,7 +210,9 @@ def test_setup_merges_the_shared_settings_and_keeps_the_machines_own(template, t
     target = make(template, tmp_path, env, "--remote", REMOTE)
     s = settings(home)
     assert s["model"] == "opus" and s["theme"] == "dark"
-    assert s["permissions"]["deny"] == ["Bash(rm -rf /)"]
+    deny = s["permissions"]["deny"]
+    assert deny[0] == "Bash(rm -rf /)"
+    assert all(rule in deny[1:] for rule in shared_settings(template)["permissions"]["deny"])
     assert s["enabledPlugins"]["xxthunder-dev-skills@xxthunder-agentic-skills"] is True
     assert "xxthunder-agentic-skills" in s["extraKnownMarketplaces"]
     assert s["hooks"] == {"PreToolUse": [repo_rules_hook(target)]}
@@ -221,7 +224,7 @@ def test_setup_merges_the_shared_settings_and_keeps_the_machines_own(template, t
     assert s["env"]["BOARD_REMOTE"] == REMOTE
 
 
-RULE_LISTS = (("permissions", "allow"), ("autoMode", "allow"), ("autoMode", "environment"))
+RULE_LISTS = (("permissions", "allow"), ("permissions", "deny"), ("autoMode", "allow"), ("autoMode", "environment"))
 
 
 def own_rules(shared: dict) -> dict:
@@ -342,8 +345,26 @@ def test_setup_turns_off_the_plugins_the_template_switches_off(template, tmp_pat
 
 def test_the_template_brings_no_ansible_lock(template):
     shared = shared_settings(template)
-    assert "hooks" not in shared and "deny" not in shared.get("permissions", {})
+    assert "hooks" not in shared
+    deny = shared.get("permissions", {}).get("deny", [])
+    assert not any(rule in ("Bash(ansible*)", "Bash(molecule*)") for rule in deny)
     assert not (template / "asf" / "claude" / "hooks" / "deny-ansible.py").exists()
+
+
+def test_the_template_denies_force_pushes_through_git_c(template):
+    deny = shared_settings(template).get("permissions", {}).get("deny", [])
+    patterns = [rule.removeprefix("Bash(").removesuffix(")") for rule in deny]
+
+    def denied(command: str) -> bool:
+        return any(fnmatch.fnmatchcase(command, pattern) for pattern in patterns)
+
+    for command in ("git -C /r push --force", "git -C /r push --force origin b", "git -C /r push -f",
+                    "git -C /r push -f origin b", "git -C /r push -fu origin b",
+                    "git -C /r push --mirror"):
+        assert denied(command), command
+    for command in ("git -C /r push --force-with-lease --dry-run", "git -C /r push origin b",
+                    "git -C /r status"):
+        assert not denied(command), command
 
 
 PLUGIN_SCRIPT = "/*/.claude/plugins/cache/*/scripts/*"
@@ -478,7 +499,9 @@ def test_setup_removes_the_ansible_lock_an_earlier_setup_made(template, tmp_path
     }), encoding="utf-8", newline="\n")
     target = make(template, tmp_path, env)
     s = settings(home)
-    assert s["permissions"]["deny"] == ["Bash(rm -rf /)"]
+    assert s["permissions"]["deny"] == ["Bash(rm -rf /)", *shared_settings(template)["permissions"]["deny"]]
+    assert "Bash(ansible*)" not in s["permissions"]["deny"]
+    assert "Bash(molecule*)" not in s["permissions"]["deny"]
     assert s["hooks"] == {"PreToolUse": [OWN_HOOK, repo_rules_hook(target)]}
     assert not (hooks / "deny-ansible.py").is_symlink()
     assert (hooks / "deny-ansible.py.bak-20261027161101").read_text(encoding="utf-8") == "# my old hook\n"
@@ -492,7 +515,9 @@ def test_setup_leaves_no_empty_settings_behind_the_ansible_lock(template, tmp_pa
     }), encoding="utf-8", newline="\n")
     target = make(template, tmp_path, env)
     s = settings(home)
-    assert "deny" not in s["permissions"]
+    assert s["permissions"]["deny"] == shared_settings(template)["permissions"]["deny"]
+    assert "Bash(ansible*)" not in s["permissions"]["deny"]
+    assert "Bash(molecule*)" not in s["permissions"]["deny"]
     assert s["permissions"]["allow"] == shared_settings(template)["permissions"]["allow"]
     assert s["hooks"] == {"PreToolUse": [repo_rules_hook(target)]}
 

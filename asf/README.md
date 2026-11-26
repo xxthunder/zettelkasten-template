@@ -60,10 +60,11 @@ Kasten goes into its own files in its root — its own `AGENTS.md` imports
   Kasten (`new`), sets a machine up for one (`setup`) and updates one (`update`); its tests
   are in `tests/` (`cd asf && uv run --group dev pytest`)
 - `claude/` — the global instructions, the shared part of the user settings (plugins,
-  marketplaces, and the permission rules of `permissions.allow`, `autoMode.allow` and
-  `autoMode.environment`) and the `repo-rules` hook, which has a session read a neighbour
-  repository's rules before its first call there; `setup` points `~/.claude` at them,
-  adds the rule entries the user lacks, registers the hook and installs the plugins
+  marketplaces, and the permission rules of `permissions.allow`, `permissions.deny`,
+  `autoMode.allow` and `autoMode.environment`) and the `repo-rules` hook, which has a
+  session read a neighbour repository's rules before its first call there; `setup` points
+  `~/.claude` at them, adds the rule entries the user lacks, registers the hook and
+  installs the plugins
 - `shell/asf.zsh` — `PATH` for `claude` and `uv`, and `claude-tmux`; `setup` sources it from
   `~/.zshrc`
 - `skills/` — the Kasten's own skills (`process-inbox`); `setup` links them into

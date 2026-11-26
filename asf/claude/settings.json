@@ -38,6 +38,12 @@
       "Bash(uv run /*/.claude/plugins/cache/*/scripts/* *)",
       "Bash(/*/.claude/plugins/cache/*/scripts/* *)",
       "Bash(git push *)"
+    ],
+    "deny": [
+      "Bash(git -C * push --force)",
+      "Bash(git -C * push --force *)",
+      "Bash(git -C * push -f*)",
+      "Bash(git -C * push --mirror*)"
     ]
   },
   "autoMode": {
