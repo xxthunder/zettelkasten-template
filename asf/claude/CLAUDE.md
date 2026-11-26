@@ -66,6 +66,10 @@ started in it — test-first and running the test suite before every commit incl
   another language.
 - **Follow-up work goes into a backlog item** — the repository's `docs/backlog/`, or the
   consuming repository's for one without a backlog — not into a GitHub issue.
+- **Keep the number of backlog items small.** Before you propose a new item, look for an
+  open item with the same root problem. Add the finding there after the author agrees.
+  Propose a new item only when no open item fits. Group findings by root problem, not by
+  symptom.
 - **The author is the Product Owner** of every repository. When a request goes against an
   item's scope, say so in one line, record the exception as a Scope Decision, and carry on.
 - **An item closes when the change works.** A criterion that waits weeks for monitoring is
