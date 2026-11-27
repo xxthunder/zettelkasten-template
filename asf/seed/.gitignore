@@ -23,3 +23,6 @@ __pycache__/
 .obsidian/*
 !.obsidian/app.json
 .trash/
+
+# Throwaway files for review in VS Code (criticmark-review), local only
+review/

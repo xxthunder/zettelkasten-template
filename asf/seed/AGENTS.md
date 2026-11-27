@@ -15,3 +15,12 @@ its own: [CONVENTIONS.md](CONVENTIONS.md) → Language.
 
 No areas of its own yet besides `engineering/`. An area brings a folder, a hub, a template in
 `templates/` and a section here.
+
+<!-- Optional, needs the VS Code extension cuinixam.criticmark-review. To switch it on, delete this line and the closing line of the comment.
+
+## Review in files
+
+A reply longer than one paragraph goes into a file for review with `criticmark-review`.
+Chat gets two sentences and the path. Throwaway review files go to `review/`, named
+`YYYY-MM-DD-<slug>.md`, and are deleted after approval. `review/` is not tracked.
+-->
